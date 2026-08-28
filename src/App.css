@@ -1,0 +1,1435 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #f4f6f3;
+  background: #060906;
+  font-synthesis: none;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(
+      circle at 50% -10%,
+      #172617 0%,
+      #080b08 42%,
+      #050705 100%
+    );
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+/* =====================================================
+   APP
+===================================================== */
+
+.app {
+  min-height: 100vh;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15, 22, 16, .92),
+      #060806 60%
+    );
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.topbar {
+  height: 76px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 5%;
+
+  border-bottom: 1px solid rgba(255,255,255,.07);
+
+  background: rgba(6,9,7,.82);
+
+  backdrop-filter: blur(20px);
+}
+
+.brand {
+  border: 0;
+  background: transparent;
+  color: white;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  cursor: pointer;
+
+  font-size: 27px;
+  font-weight: 900;
+}
+
+.brand-symbol {
+  color: #a5f51a;
+  font-size: 37px;
+  line-height: 1;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon,
+.profile-button {
+  width: 43px;
+  height: 43px;
+
+  border: 0;
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  background: #151a16;
+  color: white;
+}
+
+.profile-button {
+  padding: 0;
+  overflow: hidden;
+  background: #a5f51a;
+  color: #111;
+  display: grid;
+  place-items: center;
+}
+
+.profile-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* =====================================================
+   CONTENT
+===================================================== */
+
+.content {
+  width: min(1100px, 92%);
+  margin: auto;
+
+  padding: 45px 0 125px;
+}
+
+
+/* =====================================================
+   WELCOME
+===================================================== */
+
+.welcome {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+
+  color: #a5f51a;
+
+  font-size: 12px;
+  font-weight: 900;
+
+  letter-spacing: 2px;
+}
+
+.welcome h1,
+.page h1 {
+  margin: 0;
+
+  font-size: clamp(32px, 5vw, 48px);
+  letter-spacing: -1.8px;
+}
+
+.welcome > p:last-child {
+  margin: 5px 0 0;
+  color: #7d877e;
+  font-size: 17px;
+}
+
+
+/* =====================================================
+   RANK CARD
+===================================================== */
+
+.rank-card {
+  position: relative;
+  overflow: hidden;
+
+  padding: 30px;
+
+  border: 1px solid rgba(165,245,26,.22);
+  border-radius: 25px;
+
+  background:
+    radial-gradient(
+      circle at 90% 20%,
+      rgba(165,245,26,.13),
+      transparent 35%
+    ),
+    #111711;
+}
+
+.rank-content {
+  position: relative;
+  z-index: 2;
+}
+
+.small-title {
+  color: #a5f51a;
+
+  font-size: 12px;
+  font-weight: 900;
+
+  letter-spacing: 1.7px;
+}
+
+.rank-card h2 {
+  margin: 8px 0 2px;
+  font-size: 29px;
+}
+
+.rank-level {
+  margin-bottom: 8px;
+  color: #a5f51a;
+}
+
+.rank-card strong {
+  font-size: 17px;
+}
+
+.rank-badge {
+  position: absolute;
+
+  right: 35px;
+  top: 28px;
+
+  width: 78px;
+  height: 78px;
+
+  display: grid;
+  place-items: center;
+
+  border: 2px solid #a5f51a;
+  border-radius: 23px;
+
+  background: #172016;
+
+  font-size: 37px;
+
+  transform: rotate(8deg);
+}
+
+.progress {
+  height: 7px;
+
+  margin-top: 30px;
+
+  overflow: hidden;
+
+  border-radius: 20px;
+
+  background: #252c25;
+}
+
+.progress-bar {
+  width: 82%;
+  height: 100%;
+
+  border-radius: inherit;
+
+  background: #a5f51a;
+
+  box-shadow: 0 0 14px rgba(165,245,26,.45);
+}
+
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+
+  margin-top: 10px;
+
+  color: #697269;
+
+  font-size: 12px;
+}
+
+
+/* =====================================================
+   SECTIONS
+===================================================== */
+
+.section {
+  margin-top: 38px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 15px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.section-heading span {
+  color: #697269;
+  font-size: 13px;
+}
+
+.section-heading button {
+  border: 0;
+  background: transparent;
+
+  color: #a5f51a;
+
+  cursor: pointer;
+
+  font-size: 14px;
+}
+
+
+/* =====================================================
+   TOUR CARD
+===================================================== */
+
+.tour-card {
+  overflow: hidden;
+
+  display: grid;
+  grid-template-columns: 1fr 1.45fr;
+
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 23px;
+
+  background: #111512;
+}
+
+.tour-image {
+  position: relative;
+
+  min-height: 240px;
+
+  display: grid;
+  place-items: center;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 35% 25%,
+      #41622f,
+      transparent 35%
+    ),
+    linear-gradient(
+      145deg,
+      #18341d,
+      #071009
+    );
+}
+
+.mountain {
+  font-size: 105px;
+  opacity: .7;
+  filter: grayscale(1);
+}
+
+.trail-dot {
+  position: absolute;
+
+  left: 43%;
+  top: 31%;
+
+  width: 17px;
+  height: 17px;
+
+  border: 3px solid white;
+  border-radius: 50%;
+
+  background: #a5f51a;
+
+  box-shadow: 0 0 15px rgba(165,245,26,.8);
+}
+
+.tour-info {
+  padding: 27px;
+}
+
+.tour-title {
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.green-dot {
+  display: inline-block;
+
+  width: 9px;
+  height: 9px;
+
+  margin-right: 9px;
+
+  border-radius: 50%;
+
+  background: #a5f51a;
+}
+
+.difficulty {
+  display: inline-block;
+
+  margin-top: 10px;
+  padding: 6px 10px;
+
+  border-radius: 8px;
+
+  background: #202820;
+
+  color: #a5f51a;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.difficulty.blue {
+  color: #61a7ff;
+  background: #172130;
+}
+
+.tour-stats {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 15px;
+
+  margin-top: 38px;
+}
+
+.tour-stats div {
+  display: flex;
+  flex-direction: column;
+}
+
+.tour-stats strong {
+  font-size: 22px;
+}
+
+.tour-stats span {
+  color: #a5f51a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tour-stats small {
+  margin-top: 5px;
+
+  color: #6d766e;
+
+  font-size: 10px;
+}
+
+
+/* =====================================================
+   FRIENDS
+===================================================== */
+
+.friends-row {
+  display: flex;
+  gap: 25px;
+
+  overflow-x: auto;
+
+  padding: 5px 2px 12px;
+}
+
+.friend {
+  min-width: 65px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 8px;
+
+  color: #cbd0cb;
+  font-size: 12px;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+
+  display: grid;
+  place-items: center;
+
+  border: 2px solid #a5f51a;
+  border-radius: 50%;
+
+  background: #1a211b;
+
+  font-size: 25px;
+}
+
+
+/* =====================================================
+   START BUTTON
+===================================================== */
+
+.start-button {
+  width: 100%;
+  height: 60px;
+
+  margin-top: 38px;
+
+  border: 0;
+  border-radius: 18px;
+
+  cursor: pointer;
+
+  background: #a5f51a;
+  color: #10150c;
+
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: .5px;
+
+  transition: .2s;
+}
+
+.start-button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+
+/* =====================================================
+   PAGES
+===================================================== */
+
+.page > h1 {
+  margin-bottom: 30px;
+}
+
+
+/* =====================================================
+   TOUREN
+===================================================== */
+
+.tour-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.saved-tour {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+
+  padding: 15px;
+
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 20px;
+
+  background: #111512;
+}
+
+.saved-tour-image {
+  width: 125px;
+  height: 105px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #274c2b,
+      #0c160d
+    );
+
+  font-size: 48px;
+}
+
+.saved-tour h3 {
+  margin: 10px 0 5px;
+  font-size: 20px;
+}
+
+.saved-tour p {
+  margin: 0;
+  color: #aab0aa;
+}
+
+.tour-date {
+  display: block;
+  margin-top: 7px;
+  color: #6f786f;
+  font-size: 12px;
+}
+
+
+/* =====================================================
+   STATISTIKEN
+===================================================== */
+
+.stats-grid {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 15px;
+}
+
+.info-card {
+  padding: 25px;
+
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 20px;
+
+  background: #111512;
+}
+
+.info-card strong {
+  font-size: 28px;
+}
+
+.info-card span {
+  margin-left: 4px;
+  color: #a5f51a;
+}
+
+.info-card small {
+  display: block;
+  margin-top: 8px;
+  color: #737c74;
+}
+
+.chart-card {
+  margin-top: 20px;
+  padding: 25px;
+
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 20px;
+
+  background: #111512;
+}
+
+.chart-card h2 {
+  margin-top: 0;
+}
+
+.fake-chart {
+  height: 220px;
+
+  display: flex;
+  align-items: end;
+
+  gap: 12px;
+
+  padding: 20px 5px 0;
+
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.fake-chart div {
+  flex: 1;
+
+  min-width: 10px;
+
+  border-radius: 8px 8px 0 0;
+
+  background: #a5f51a;
+  opacity: .8;
+}
+
+.chart-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+
+  padding-top: 10px;
+
+  color: #697269;
+
+  font-size: 10px;
+
+  text-align: center;
+}
+
+
+/* =====================================================
+   FRIENDS PAGE
+===================================================== */
+
+.friend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.friend-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  padding: 15px;
+
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 18px;
+
+  background: #111512;
+}
+
+.large-avatar {
+  width: 52px;
+  height: 52px;
+
+  display: grid;
+  place-items: center;
+
+  border: 2px solid #a5f51a;
+  border-radius: 50%;
+
+  background: #1a211b;
+
+  font-size: 24px;
+}
+
+.friend-details {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.friend-details strong {
+  font-size: 16px;
+}
+
+.friend-details span {
+  color: #747d75;
+  font-size: 12px;
+}
+
+.online-dot {
+  width: 9px;
+  height: 9px;
+
+  border-radius: 50%;
+
+  background: #a5f51a;
+
+  box-shadow: 0 0 10px rgba(165,245,26,.6);
+}
+
+
+/* =====================================================
+   RANG PAGE
+===================================================== */
+
+.rank-big-card {
+  text-align: center;
+
+  padding: 45px 25px;
+
+  border: 1px solid rgba(165,245,26,.2);
+  border-radius: 25px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(165,245,26,.12),
+      transparent 55%
+    ),
+    #111711;
+}
+
+.rank-big-icon {
+  font-size: 65px;
+  margin-bottom: 15px;
+}
+
+.rank-big-card h2 {
+  margin: 10px 0;
+
+  font-size: 34px;
+}
+
+.rank-big-card > strong {
+  color: #a5f51a;
+  font-size: 20px;
+}
+
+.rank-explanation {
+  max-width: 500px;
+
+  margin: 20px auto 0;
+
+  color: #7b847c;
+  line-height: 1.6;
+}
+
+.rank-levels {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 12px;
+
+  margin-top: 20px;
+}
+
+.rank-levels > div {
+  padding: 20px;
+
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 18px;
+
+  background: #111512;
+}
+
+.rank-levels span {
+  display: block;
+
+  color: #606960;
+
+  font-size: 12px;
+}
+
+.rank-levels strong {
+  display: block;
+
+  margin-top: 10px;
+}
+
+.rank-levels small {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #6e776f;
+}
+
+.rank-levels .current {
+  border-color: rgba(165,245,26,.35);
+
+  background:
+    rgba(165,245,26,.07);
+}
+
+
+/* =====================================================
+   MAP
+===================================================== */
+
+.map-placeholder {
+  position: relative;
+
+  height: 620px;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 25px;
+
+  background:
+    radial-gradient(
+      circle at 35% 35%,
+      #315332,
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 70% 70%,
+      #1c3b22,
+      transparent 30%
+    ),
+    #101710;
+}
+
+.map-grid {
+  position: absolute;
+  inset: 0;
+
+  opacity: .22;
+
+  background-image:
+    linear-gradient(
+      rgba(255,255,255,.12) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,.12) 1px,
+      transparent 1px
+    );
+
+  background-size: 45px 45px;
+
+  transform: rotate(-7deg) scale(1.2);
+}
+
+.map-marker {
+  position: absolute;
+
+  left: 50%;
+  top: 45%;
+
+  font-size: 45px;
+
+  filter: drop-shadow(
+    0 0 10px rgba(165,245,26,.8)
+  );
+}
+
+.map-trail {
+  position: absolute;
+
+  width: 65%;
+  height: 150px;
+
+  left: 18%;
+  top: 30%;
+
+  border: 5px solid #a5f51a;
+  border-left-color: transparent;
+  border-radius: 50%;
+
+  transform: rotate(-15deg);
+
+  opacity: .8;
+}
+
+.map-message {
+  position: absolute;
+
+  left: 25px;
+  bottom: 25px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  padding: 15px 18px;
+
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 15px;
+
+  background: rgba(8,12,9,.88);
+
+  backdrop-filter: blur(15px);
+}
+
+.map-message span {
+  color: #788078;
+  font-size: 12px;
+}
+
+
+/* =====================================================
+   BOTTOM NAVIGATION
+===================================================== */
+
+.bottom-nav {
+  position: fixed;
+
+  z-index: 30;
+
+  left: 50%;
+  bottom: 17px;
+
+  transform: translateX(-50%);
+
+  width: min(650px, 92%);
+  height: 70px;
+
+  display: grid;
+
+  grid-template-columns: repeat(5, 1fr);
+
+  padding: 7px;
+
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 22px;
+
+  background: rgba(15,19,16,.92);
+
+  backdrop-filter: blur(20px);
+
+  box-shadow:
+    0 18px 55px rgba(0,0,0,.55);
+}
+
+.nav-button {
+  border: 0;
+  border-radius: 16px;
+
+  background: transparent;
+
+  color: #687068;
+
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 3px;
+
+  font-size: 10px;
+
+  transition: .2s;
+}
+
+.nav-icon {
+  font-size: 22px;
+}
+
+.nav-button:hover {
+  color: #c8cec9;
+}
+
+.nav-button.active {
+  color: #a5f51a;
+
+  background:
+    rgba(165,245,26,.09);
+}
+
+
+/* =====================================================
+   PROFIL SETUP
+===================================================== */
+
+.setup-screen {
+  min-height: 100vh;
+
+  display: grid;
+  place-items: center;
+
+  padding: 30px;
+
+  background:
+    radial-gradient(
+      circle at 50% 20%,
+      #20361f,
+      #080b08 55%
+    );
+}
+
+.setup-card {
+  width: min(460px, 100%);
+
+  padding: 40px;
+
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 28px;
+
+  background:
+    rgba(15,20,16,.94);
+
+  box-shadow:
+    0 30px 80px rgba(0,0,0,.5);
+
+  text-align: center;
+}
+
+.setup-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  gap: 7px;
+
+  margin-bottom: 30px;
+
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.setup-logo span {
+  color: #a5f51a;
+  font-size: 40px;
+}
+
+.setup-icon {
+  width: 100px;
+  height: 100px;
+
+  margin: auto;
+
+  display: grid;
+  place-items: center;
+
+  border: 3px solid #a5f51a;
+  border-radius: 50%;
+
+  background: #1a211b;
+
+  font-size: 43px;
+
+  overflow: hidden;
+}
+
+.setup-icon img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.setup-card h1 {
+  margin: 25px 0 8px;
+
+  font-size: 30px;
+}
+
+.setup-description {
+  margin: 0 auto 30px;
+
+  color: #788078;
+
+  line-height: 1.5;
+}
+
+.input-label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  text-align: left;
+
+  color: #a5f51a;
+
+  font-size: 11px;
+  font-weight: 900;
+
+  letter-spacing: 1.5px;
+}
+
+.name-input {
+  width: 100%;
+  height: 53px;
+
+  padding: 0 16px;
+
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px;
+
+  outline: none;
+
+  background: #0a0e0b;
+
+  color: white;
+
+  font-size: 16px;
+}
+
+.name-input:focus {
+  border-color: #a5f51a;
+
+  box-shadow:
+    0 0 0 3px rgba(165,245,26,.08);
+}
+
+.image-button {
+  width: 100%;
+  height: 50px;
+
+  margin-top: 12px;
+
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px;
+
+  background: #171d18;
+
+  color: #c7cdc8;
+
+  cursor: pointer;
+}
+
+.image-button:hover {
+  background: #202820;
+}
+
+.create-button {
+  width: 100%;
+  height: 55px;
+
+  margin-top: 18px;
+
+  border: 0;
+  border-radius: 15px;
+
+  background: #a5f51a;
+  color: #10150c;
+
+  cursor: pointer;
+
+  font-weight: 900;
+}
+
+.create-button:disabled {
+  cursor: not-allowed;
+
+  opacity: .35;
+}
+
+.create-button span {
+  float: right;
+  margin-right: 15px;
+}
+
+.privacy-note {
+  margin: 15px 0 0;
+
+  color: #555e56;
+
+  font-size: 11px;
+}
+
+.hidden-input {
+  display: none;
+}
+
+
+/* =====================================================
+   PROFIL MODAL
+===================================================== */
+
+.modal-background {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 100;
+
+  display: grid;
+  place-items: center;
+
+  padding: 20px;
+
+  background: rgba(0,0,0,.72);
+
+  backdrop-filter: blur(10px);
+}
+
+.profile-modal {
+  position: relative;
+
+  width: min(420px, 100%);
+
+  padding: 35px;
+
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 25px;
+
+  background: #111612;
+
+  box-shadow:
+    0 30px 80px rgba(0,0,0,.6);
+}
+
+.profile-modal h2 {
+  margin-top: 0;
+
+  text-align: center;
+}
+
+.close-button {
+  position: absolute;
+
+  right: 17px;
+  top: 15px;
+
+  width: 35px;
+  height: 35px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #202620;
+
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 22px;
+}
+
+.modal-avatar {
+  width: 90px;
+  height: 90px;
+
+  margin: 20px auto;
+
+  display: grid;
+  place-items: center;
+
+  border: 3px solid #a5f51a;
+  border-radius: 50%;
+
+  overflow: hidden;
+
+  background: #1a211b;
+
+  font-size: 40px;
+}
+
+.modal-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 750px) {
+
+  .topbar {
+    height: 65px;
+    padding: 0 20px;
+  }
+
+  .content {
+    width: 92%;
+    padding-top: 30px;
+  }
+
+  .welcome h1 {
+    font-size: 34px;
+  }
+
+  .rank-card {
+    padding: 23px;
+  }
+
+  .rank-badge {
+    width: 58px;
+    height: 58px;
+
+    right: 20px;
+    top: 20px;
+
+    font-size: 27px;
+  }
+
+  .progress-text {
+    font-size: 10px;
+  }
+
+  .tour-card {
+    grid-template-columns: 1fr;
+  }
+
+  .tour-image {
+    min-height: 180px;
+  }
+
+  .tour-info {
+    padding: 20px;
+  }
+
+  .tour-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 23px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rank-levels {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .map-placeholder {
+    height: 500px;
+  }
+
+  .saved-tour-image {
+    width: 95px;
+    height: 85px;
+  }
+
+  .saved-tour {
+    gap: 13px;
+  }
+
+  .setup-card {
+    padding: 30px 23px;
+  }
+
+}
+
+
+/* =====================================================
+   VERY SMALL PHONES
+===================================================== */
+
+@media (max-width: 430px) {
+
+  .content {
+    width: 94%;
+  }
+
+  .bottom-nav {
+    width: 96%;
+    bottom: 8px;
+  }
+
+  .nav-icon {
+    font-size: 19px;
+  }
+
+  .nav-button {
+    font-size: 9px;
+  }
+
+  .tour-stats strong {
+    font-size: 19px;
+  }
+
+  .rank-levels {
+    grid-template-columns: 1fr;
+  }
+
+}
