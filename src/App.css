@@ -3,7 +3,14 @@
 }
 
 :root {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
   color: #f4f6f3;
   background: #060906;
   font-synthesis: none;
@@ -12,6 +19,7 @@
 body {
   margin: 0;
   min-width: 320px;
+
   background:
     radial-gradient(
       circle at 50% -10%,
@@ -30,13 +38,16 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
 
-/* =====================================================
-   APP
-===================================================== */
+/* APP */
 
 .app {
   min-height: 100vh;
+
   background:
     linear-gradient(
       180deg,
@@ -45,13 +56,11 @@ button {
     );
 }
 
-
-/* =====================================================
-   HEADER
-===================================================== */
+/* HEADER */
 
 .topbar {
   height: 76px;
+
   position: sticky;
   top: 0;
   z-index: 20;
@@ -62,9 +71,11 @@ button {
 
   padding: 0 5%;
 
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  border-bottom:
+    1px solid rgba(255,255,255,.07);
 
-  background: rgba(6,9,7,.82);
+  background:
+    rgba(6,9,7,.82);
 
   backdrop-filter: blur(20px);
 }
@@ -76,6 +87,7 @@ button {
 
   display: flex;
   align-items: center;
+
   gap: 8px;
 
   cursor: pointer;
@@ -113,8 +125,10 @@ button {
 .profile-button {
   padding: 0;
   overflow: hidden;
+
   background: #a5f51a;
   color: #111;
+
   display: grid;
   place-items: center;
 }
@@ -125,10 +139,7 @@ button {
   object-fit: cover;
 }
 
-
-/* =====================================================
-   CONTENT
-===================================================== */
+/* CONTENT */
 
 .content {
   width: min(1100px, 92%);
@@ -137,15 +148,7 @@ button {
   padding: 45px 0 125px;
 }
 
-
-/* =====================================================
-   WELCOME
-===================================================== */
-
-.welcome {
-  text-align: center;
-  margin-bottom: 35px;
-}
+/* TEXT */
 
 .eyebrow {
   margin: 0 0 8px;
@@ -158,24 +161,29 @@ button {
   letter-spacing: 2px;
 }
 
+.welcome {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
 .welcome h1,
 .page h1 {
   margin: 0;
 
-  font-size: clamp(32px, 5vw, 48px);
+  font-size:
+    clamp(32px, 5vw, 48px);
+
   letter-spacing: -1.8px;
 }
 
 .welcome > p:last-child {
   margin: 5px 0 0;
+
   color: #7d877e;
   font-size: 17px;
 }
 
-
-/* =====================================================
-   RANK CARD
-===================================================== */
+/* RANG */
 
 .rank-card {
   position: relative;
@@ -183,7 +191,9 @@ button {
 
   padding: 30px;
 
-  border: 1px solid rgba(165,245,26,.22);
+  border:
+    1px solid rgba(165,245,26,.22);
+
   border-radius: 25px;
 
   background:
@@ -219,10 +229,6 @@ button {
   color: #a5f51a;
 }
 
-.rank-card strong {
-  font-size: 17px;
-}
-
 .rank-badge {
   position: absolute;
 
@@ -235,7 +241,9 @@ button {
   display: grid;
   place-items: center;
 
-  border: 2px solid #a5f51a;
+  border:
+    2px solid #a5f51a;
+
   border-radius: 23px;
 
   background: #172016;
@@ -264,8 +272,6 @@ button {
   border-radius: inherit;
 
   background: #a5f51a;
-
-  box-shadow: 0 0 14px rgba(165,245,26,.45);
 }
 
 .progress-text {
@@ -275,14 +281,10 @@ button {
   margin-top: 10px;
 
   color: #697269;
-
   font-size: 12px;
 }
 
-
-/* =====================================================
-   SECTIONS
-===================================================== */
+/* SECTIONS */
 
 .section {
   margin-top: 38px;
@@ -317,10 +319,7 @@ button {
   font-size: 14px;
 }
 
-
-/* =====================================================
-   TOUR CARD
-===================================================== */
+/* TOUR */
 
 .tour-card {
   overflow: hidden;
@@ -328,7 +327,9 @@ button {
   display: grid;
   grid-template-columns: 1fr 1.45fr;
 
-  border: 1px solid rgba(255,255,255,.07);
+  border:
+    1px solid rgba(255,255,255,.07);
+
   border-radius: 23px;
 
   background: #111512;
@@ -360,7 +361,6 @@ button {
 .mountain {
   font-size: 105px;
   opacity: .7;
-  filter: grayscale(1);
 }
 
 .trail-dot {
@@ -376,8 +376,6 @@ button {
   border-radius: 50%;
 
   background: #a5f51a;
-
-  box-shadow: 0 0 15px rgba(165,245,26,.8);
 }
 
 .tour-info {
@@ -406,6 +404,7 @@ button {
   display: inline-block;
 
   margin-top: 10px;
+
   padding: 6px 10px;
 
   border-radius: 8px;
@@ -425,8 +424,8 @@ button {
 
 .tour-stats {
   display: grid;
-
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns:
+    repeat(4, 1fr);
 
   gap: 15px;
 
@@ -444,6 +443,7 @@ button {
 
 .tour-stats span {
   color: #a5f51a;
+
   font-size: 11px;
   font-weight: 700;
 }
@@ -456,10 +456,7 @@ button {
   font-size: 10px;
 }
 
-
-/* =====================================================
-   FRIENDS
-===================================================== */
+/* FREUNDE */
 
 .friends-row {
   display: flex;
@@ -490,7 +487,9 @@ button {
   display: grid;
   place-items: center;
 
-  border: 2px solid #a5f51a;
+  border:
+    2px solid #a5f51a;
+
   border-radius: 50%;
 
   background: #1a211b;
@@ -498,10 +497,7 @@ button {
   font-size: 25px;
 }
 
-
-/* =====================================================
-   START BUTTON
-===================================================== */
+/* START */
 
 .start-button {
   width: 100%;
@@ -519,29 +515,19 @@ button {
 
   font-size: 16px;
   font-weight: 900;
-  letter-spacing: .5px;
-
-  transition: .2s;
 }
 
 .start-button:hover {
   transform: translateY(-2px);
-  filter: brightness(1.08);
 }
 
-
-/* =====================================================
-   PAGES
-===================================================== */
+/* PAGES */
 
 .page > h1 {
   margin-bottom: 30px;
 }
 
-
-/* =====================================================
-   TOUREN
-===================================================== */
+/* TOUR LIST */
 
 .tour-list {
   display: flex;
@@ -556,7 +542,9 @@ button {
 
   padding: 15px;
 
-  border: 1px solid rgba(255,255,255,.07);
+  border:
+    1px solid rgba(255,255,255,.07);
+
   border-radius: 20px;
 
   background: #111512;
@@ -596,19 +584,18 @@ button {
 .tour-date {
   display: block;
   margin-top: 7px;
+
   color: #6f786f;
   font-size: 12px;
 }
 
-
-/* =====================================================
-   STATISTIKEN
-===================================================== */
+/* STATS */
 
 .stats-grid {
   display: grid;
 
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns:
+    repeat(4, 1fr);
 
   gap: 15px;
 }
@@ -616,7 +603,9 @@ button {
 .info-card {
   padding: 25px;
 
-  border: 1px solid rgba(255,255,255,.07);
+  border:
+    1px solid rgba(255,255,255,.07);
+
   border-radius: 20px;
 
   background: #111512;
@@ -634,6 +623,7 @@ button {
 .info-card small {
   display: block;
   margin-top: 8px;
+
   color: #737c74;
 }
 
@@ -641,7 +631,9 @@ button {
   margin-top: 20px;
   padding: 25px;
 
-  border: 1px solid rgba(255,255,255,.07);
+  border:
+    1px solid rgba(255,255,255,.07);
+
   border-radius: 20px;
 
   background: #111512;
@@ -661,7 +653,8 @@ button {
 
   padding: 20px 5px 0;
 
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  border-bottom:
+    1px solid rgba(255,255,255,.08);
 }
 
 .fake-chart div {
@@ -677,7 +670,8 @@ button {
 
 .chart-days {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns:
+    repeat(7, 1fr);
 
   padding-top: 10px;
 
@@ -688,10 +682,7 @@ button {
   text-align: center;
 }
 
-
-/* =====================================================
-   FRIENDS PAGE
-===================================================== */
+/* FRIENDS */
 
 .friend-list {
   display: flex;
@@ -703,13 +694,49 @@ button {
   display: flex;
   align-items: center;
   gap: 15px;
-
   padding: 15px;
 
   border: 1px solid rgba(255,255,255,.07);
   border-radius: 18px;
 
   background: #111512;
+
+  transition:
+    background .2s ease,
+    border-color .2s ease,
+    transform .2s ease;
+}
+
+.friend-card:hover {
+  background: #151b16;
+  border-color: rgba(165,245,26,.18);
+  transform: translateY(-1px);
+}
+
+.remove-friend-button {
+  margin-left: auto;
+
+  border: 1px solid rgba(255,80,80,.18);
+  border-radius: 10px;
+
+  padding: 8px 11px;
+
+  background: rgba(255,60,60,.08);
+  color: #ff6b6b;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background .2s ease,
+    border-color .2s ease;
+}
+
+.remove-friend-button:hover {
+  background: rgba(255,60,60,.16);
+  border-color: rgba(255,80,80,.35);
 }
 
 .large-avatar {
@@ -719,7 +746,9 @@ button {
   display: grid;
   place-items: center;
 
-  border: 2px solid #a5f51a;
+  border:
+    2px solid #a5f51a;
+
   border-radius: 50%;
 
   background: #1a211b;
@@ -732,11 +761,8 @@ button {
 
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
 
-.friend-details strong {
-  font-size: 16px;
+  gap: 4px;
 }
 
 .friend-details span {
@@ -747,25 +773,34 @@ button {
 .online-dot {
   width: 9px;
   height: 9px;
-
   border-radius: 50%;
+  flex-shrink: 0;
 
-  background: #a5f51a;
+  display: block;
 
-  box-shadow: 0 0 10px rgba(165,245,26,.6);
+  transition: background .2s ease, box-shadow .2s ease;
 }
 
+.online-dot.online {
+  background: #a5f51a;
+  box-shadow: 0 0 8px rgba(165, 245, 26, .65);
+}
 
-/* =====================================================
-   RANG PAGE
-===================================================== */
+.online-dot.offline {
+  background: #ff4d4d;
+  box-shadow: 0 0 8px rgba(255, 77, 77, .35);
+}
+
+/* RANG PAGE */
 
 .rank-big-card {
   text-align: center;
 
   padding: 45px 25px;
 
-  border: 1px solid rgba(165,245,26,.2);
+  border:
+    1px solid rgba(165,245,26,.2);
+
   border-radius: 25px;
 
   background:
@@ -784,7 +819,6 @@ button {
 
 .rank-big-card h2 {
   margin: 10px 0;
-
   font-size: 34px;
 }
 
@@ -799,13 +833,15 @@ button {
   margin: 20px auto 0;
 
   color: #7b847c;
+
   line-height: 1.6;
 }
 
 .rank-levels {
   display: grid;
 
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns:
+    repeat(4, 1fr);
 
   gap: 12px;
 
@@ -815,7 +851,9 @@ button {
 .rank-levels > div {
   padding: 20px;
 
-  border: 1px solid rgba(255,255,255,.07);
+  border:
+    1px solid rgba(255,255,255,.07);
+
   border-radius: 18px;
 
   background: #111512;
@@ -825,216 +863,738 @@ button {
   display: block;
 
   color: #606960;
-
   font-size: 12px;
 }
 
 .rank-levels strong {
   display: block;
-
   margin-top: 10px;
 }
 
 .rank-levels small {
   display: block;
-
   margin-top: 5px;
 
   color: #6e776f;
 }
 
 .rank-levels .current {
-  border-color: rgba(165,245,26,.35);
+  border-color:
+    rgba(165,245,26,.35);
 
   background:
     rgba(165,245,26,.07);
 }
 
-
 /* =====================================================
-   MAP
+   🗺️ MAP
 ===================================================== */
 
-.map-placeholder {
-  position: relative;
-
-  height: 620px;
-
-  overflow: hidden;
-
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 25px;
-
-  background:
-    radial-gradient(
-      circle at 35% 35%,
-      #315332,
-      transparent 25%
-    ),
-    radial-gradient(
-      circle at 70% 70%,
-      #1c3b22,
-      transparent 30%
-    ),
-    #101710;
+.map-page {
+  padding-bottom: 120px;
 }
 
-.map-grid {
-  position: absolute;
-  inset: 0;
-
-  opacity: .22;
-
-  background-image:
-    linear-gradient(
-      rgba(255,255,255,.12) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(255,255,255,.12) 1px,
-      transparent 1px
-    );
-
-  background-size: 45px 45px;
-
-  transform: rotate(-7deg) scale(1.2);
-}
-
-.map-marker {
-  position: absolute;
-
-  left: 50%;
-  top: 45%;
-
-  font-size: 45px;
-
-  filter: drop-shadow(
-    0 0 10px rgba(165,245,26,.8)
-  );
-}
-
-.map-trail {
-  position: absolute;
-
-  width: 65%;
-  height: 150px;
-
-  left: 18%;
-  top: 30%;
-
-  border: 5px solid #a5f51a;
-  border-left-color: transparent;
-  border-radius: 50%;
-
-  transform: rotate(-15deg);
-
-  opacity: .8;
-}
-
-.map-message {
-  position: absolute;
-
-  left: 25px;
-  bottom: 25px;
-
+.map-header {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
 
-  padding: 15px 18px;
+  justify-content: space-between;
+  align-items: flex-end;
 
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 15px;
+  gap: 20px;
 
-  background: rgba(8,12,9,.88);
-
-  backdrop-filter: blur(15px);
+  margin-bottom: 18px;
 }
 
-.map-message span {
-  color: #788078;
-  font-size: 12px;
+.map-header h1 {
+  margin: 0;
 }
 
-
-/* =====================================================
-   BOTTOM NAVIGATION
-===================================================== */
-
-.bottom-nav {
-  position: fixed;
-
-  z-index: 30;
-
-  left: 50%;
-  bottom: 17px;
-
-  transform: translateX(-50%);
-
-  width: min(650px, 92%);
-  height: 70px;
-
-  display: grid;
-
-  grid-template-columns: repeat(5, 1fr);
-
-  padding: 7px;
-
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 22px;
-
-  background: rgba(15,19,16,.92);
-
-  backdrop-filter: blur(20px);
-
-  box-shadow:
-    0 18px 55px rgba(0,0,0,.55);
-}
-
-.nav-button {
+.location-button {
   border: 0;
-  border-radius: 16px;
 
-  background: transparent;
+  border-radius: 13px;
 
-  color: #687068;
+  padding: 12px 17px;
+
+  background: #a5f51a;
+  color: #111;
+
+  font-weight: 800;
 
   cursor: pointer;
+}
+
+/* =====================================================
+   🗺️ TRAIL FINDER – SEARCH
+===================================================== */
+
+.map-search {
+  height: 58px;
 
   display: flex;
-  flex-direction: column;
-
   align-items: center;
-  justify-content: center;
 
-  gap: 3px;
+  gap: 12px;
 
-  font-size: 10px;
+  margin-bottom: 14px;
 
-  transition: .2s;
+  padding: 0 17px;
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  border-radius: 17px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(20,27,21,.98),
+      rgba(12,17,13,.98)
+    );
+
+  box-shadow:
+    0 12px 35px rgba(0,0,0,.28);
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease,
+    transform .2s ease;
 }
 
-.nav-icon {
-  font-size: 22px;
+.map-search:focus-within {
+  border-color:
+    rgba(165,245,26,.45);
+
+  box-shadow:
+    0 12px 35px rgba(0,0,0,.3),
+    0 0 0 3px rgba(165,245,26,.06);
+
+  transform: translateY(-1px);
 }
 
-.nav-button:hover {
-  color: #c8cec9;
-}
+/* Such-Icon */
 
-.nav-button.active {
-  color: #a5f51a;
+.map-search span {
+  width: 28px;
+  height: 28px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 9px;
 
   background:
     rgba(165,245,26,.09);
+
+  color: #a5f51a;
+
+  font-size: 16px;
 }
 
+/* Eingabefeld */
 
-/* =====================================================
-   PROFIL SETUP
-===================================================== */
+.map-search input {
+  flex: 1;
 
+  min-width: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: #f4f6f3;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  letter-spacing: .1px;
+}
+
+.map-search input::placeholder {
+  color: #687068;
+
+  font-weight: 500;
+}
+
+/* Löschen */
+
+.clear-search {
+  width: 31px;
+  height: 31px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border:
+    1px solid rgba(255,255,255,.06);
+
+  border-radius: 10px;
+
+  background: #202720;
+
+  color: #bfc6bf;
+
+  cursor: pointer;
+
+  font-size: 18px;
+
+  transition:
+    background .15s ease,
+    color .15s ease,
+    transform .15s ease;
+}
+
+.clear-search:hover {
+  background: #2a332b;
+
+  color: white;
+
+  transform: scale(1.05);
+}
+
+.clear-search:active {
+  transform: scale(.95);
+}
+
+.map-search {
+  height: 54px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 12px;
+
+  padding: 0 16px;
+
+  border:
+    1px solid rgba(255,255,255,.09);
+
+  border-radius: 16px;
+
+  background:
+    rgba(17,21,18,.96);
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,.18);
+}
+
+.map-search span {
+  font-size: 19px;
+}
+
+.map-search input {
+  flex: 1;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: white;
+
+  font-size: 15px;
+}
+
+.map-search input::placeholder {
+  color: #687068;
+}
+
+.clear-search {
+  width: 30px;
+  height: 30px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #252b26;
+
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 20px;
+}
+
+/* FILTER */
+
+.map-filter-row {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  margin-bottom: 14px;
+}
+
+.bikepark-toggle {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  border:
+    1px solid rgba(255,255,255,.09);
+
+  border-radius: 13px;
+
+  padding: 10px 14px;
+
+  background: #151b16;
+
+  color: #aeb6af;
+
+  cursor: pointer;
+
+  font-weight: 750;
+}
+
+.bikepark-toggle.active {
+  border-color:
+    rgba(165,245,26,.35);
+
+  background:
+    rgba(165,245,26,.09);
+
+  color: #a5f51a;
+}
+
+.toggle-dot {
+  width: 19px;
+  height: 19px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid #697269;
+  border-radius: 50%;
+
+  font-size: 11px;
+}
+
+.active .toggle-dot {
+  border-color: #a5f51a;
+
+  background: #a5f51a;
+
+  color: #111;
+}
+
+.bikepark-count {
+  color: #737d75;
+  font-size: 13px;
+}
+
+/* REAL MAP */
+
+.real-map {
+  position: relative;
+
+  width: 100%;
+
+  height: 600px;
+
+  overflow: hidden;
+
+  border:
+    1px solid rgba(255,255,255,.09);
+
+  border-radius: 24px;
+
+  background: #101710;
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.35);
+}
+
+.maplibre-container {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+}
+
+/* BIKEPARK MARKER */
+
+.bikepark-marker {
+  width: 39px;
+  height: 39px;
+
+  display: grid;
+  place-items: center;
+
+  border:
+    2px solid white;
+
+  border-radius: 50%;
+
+  background: #a5f51a;
+
+  box-shadow:
+    0 4px 18px rgba(0,0,0,.45),
+    0 0 16px rgba(165,245,26,.45);
+
+  cursor: pointer;
+
+  font-size: 19px;
+
+  transition:
+    transform .15s ease;
+}
+
+.bikepark-marker:hover {
+  transform: scale(1.15);
+}
+
+/* USER */
+
+.user-location-marker {
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background:
+    rgba(255,255,255,.92);
+
+  box-shadow:
+    0 4px 18px rgba(0,0,0,.5);
+
+  font-size: 22px;
+}
+
+/* SELECTED PARK */
+
+.bikepark-card {
+  position: absolute;
+
+  z-index: 10;
+
+  left: 20px;
+  bottom: 20px;
+
+  width: min(420px, calc(100% - 40px));
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 14px;
+
+  padding: 17px 18px;
+
+  border:
+    1px solid rgba(255,255,255,.12);
+
+  border-radius: 18px;
+
+  background:
+    rgba(10,14,11,.94);
+
+  backdrop-filter: blur(18px);
+
+  box-shadow:
+    0 15px 40px rgba(0,0,0,.45);
+}
+
+.bikepark-card-icon {
+  width: 53px;
+  height: 53px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 15px;
+
+  background: #a5f51a;
+
+  font-size: 25px;
+}
+
+.bikepark-card h3 {
+  margin: 4px 30px 4px 0;
+
+  font-size: 18px;
+}
+
+.bikepark-card p {
+  margin: 0 0 4px;
+
+  color: #aeb5af;
+
+  font-size: 13px;
+}
+
+.bikepark-card small {
+  color: #697269;
+
+  font-size: 10px;
+}
+
+.bikepark-label {
+  color: #a5f51a;
+
+  font-size: 10px;
+  font-weight: 900;
+
+  letter-spacing: 1.5px;
+}
+
+.bikepark-close {
+  position: absolute;
+
+  right: 10px;
+  top: 10px;
+
+  width: 28px;
+  height: 28px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #252b26;
+
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 19px;
+}
+
+/* BIKEPARK PANEL */
+
+.bikepark-panel {
+  margin-top: 18px;
+
+  padding: 22px;
+
+  border:
+    1px solid rgba(255,255,255,.07);
+
+  border-radius: 22px;
+
+  background: #111512;
+}
+
+.bikepark-panel-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 15px;
+}
+
+.bikepark-panel-header h2 {
+  margin: 0;
+
+  font-size: 22px;
+}
+
+.bikepark-panel-header .eyebrow {
+  margin-bottom: 5px;
+}
+
+.refresh-bikeparks {
+  width: 40px;
+  height: 40px;
+
+  border:
+    1px solid rgba(255,255,255,.1);
+
+  border-radius: 12px;
+
+  background: #181e19;
+
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 20px;
+}
+
+.bikepark-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 9px;
+}
+
+.bikepark-list-item {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 12px;
+
+  border:
+    1px solid rgba(255,255,255,.06);
+
+  border-radius: 14px;
+
+  background: #171c18;
+
+  color: white;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.bikepark-list-item:hover {
+  border-color:
+    rgba(165,245,26,.3);
+
+  background: #1c241d;
+}
+
+.bikepark-list-icon {
+  width: 40px;
+  height: 40px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 11px;
+
+  background: #253024;
+
+  font-size: 19px;
+}
+
+.bikepark-list-item div:nth-child(2) {
+  flex: 1;
+
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.bikepark-list-item strong {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  font-size: 14px;
+}
+
+.bikepark-list-item span {
+  color: #747d75;
+
+  font-size: 11px;
+}
+
+.bikepark-arrow {
+  color: #a5f51a !important;
+
+  font-size: 18px !important;
+}
+
+.bikepark-loading {
+  padding: 25px;
+
+  text-align: center;
+
+  color: #858e87;
+}
+
+.bikepark-empty {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 35px;
+
+  color: #858e87;
+
+  text-align: center;
+}
+
+.bikepark-empty span {
+  font-size: 30px;
+}
+
+.bikepark-empty strong {
+  color: white;
+}
+
+.bikepark-empty small {
+  color: #687068;
+}
+
+.bikepark-more {
+  margin: 15px 0 0;
+
+  color: #687068;
+
+  font-size: 11px;
+
+  text-align: center;
+}
+
+.map-attribution-note {
+  margin: 12px 3px 0;
+
+  color: #59615b;
+
+  font-size: 10px;
+
+  line-height: 1.5;
+}
+
+.map-location-info {
+  position: absolute;
+
+  z-index: 20;
+
+  left: 20px;
+  top: 20px;
+
+  padding: 12px 15px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(15,18,15,.92);
+
+  color: white;
+
+  font-size: 12px;
+}
+
+/* AUTH */
+
+.auth-screen,
 .setup-screen {
   min-height: 100vh;
 
@@ -1051,12 +1611,15 @@ button {
     );
 }
 
+.auth-card,
 .setup-card {
   width: min(460px, 100%);
 
   padding: 40px;
 
-  border: 1px solid rgba(255,255,255,.09);
+  border:
+    1px solid rgba(255,255,255,.09);
+
   border-radius: 28px;
 
   background:
@@ -1070,6 +1633,7 @@ button {
 
 .setup-logo {
   display: flex;
+
   justify-content: center;
   align-items: center;
 
@@ -1086,26 +1650,31 @@ button {
   font-size: 40px;
 }
 
-.setup-icon {
-  width: 100px;
-  height: 100px;
-
-  margin: auto;
-
+.setup-icon,
+.modal-avatar {
   display: grid;
   place-items: center;
 
-  border: 3px solid #a5f51a;
+  border:
+    3px solid #a5f51a;
+
   border-radius: 50%;
 
   background: #1a211b;
 
-  font-size: 43px;
-
   overflow: hidden;
 }
 
-.setup-icon img {
+.setup-icon {
+  width: 100px;
+  height: 100px;
+  margin: auto;
+
+  font-size: 43px;
+}
+
+.setup-icon img,
+.modal-avatar img {
   width: 100%;
   height: 100%;
 
@@ -1147,7 +1716,9 @@ button {
 
   padding: 0 16px;
 
-  border: 1px solid rgba(255,255,255,.1);
+  border:
+    1px solid rgba(255,255,255,.1);
+
   border-radius: 14px;
 
   outline: none;
@@ -1161,29 +1732,10 @@ button {
 
 .name-input:focus {
   border-color: #a5f51a;
-
-  box-shadow:
-    0 0 0 3px rgba(165,245,26,.08);
 }
 
-.image-button {
-  width: 100%;
-  height: 50px;
-
-  margin-top: 12px;
-
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 14px;
-
-  background: #171d18;
-
-  color: #c7cdc8;
-
-  cursor: pointer;
-}
-
-.image-button:hover {
-  background: #202820;
+.auth-password-label {
+  margin-top: 17px;
 }
 
 .create-button {
@@ -1203,15 +1755,27 @@ button {
   font-weight: 900;
 }
 
-.create-button:disabled {
-  cursor: not-allowed;
-
-  opacity: .35;
-}
-
 .create-button span {
   float: right;
   margin-right: 15px;
+}
+
+.image-button {
+  width: 100%;
+  height: 50px;
+
+  margin-top: 12px;
+
+  border:
+    1px solid rgba(255,255,255,.1);
+
+  border-radius: 14px;
+
+  background: #171d18;
+
+  color: #c7cdc8;
+
+  cursor: pointer;
 }
 
 .privacy-note {
@@ -1226,10 +1790,51 @@ button {
   display: none;
 }
 
+.auth-badge {
+  width: 65px;
+  height: 65px;
 
-/* =====================================================
-   PROFIL MODAL
-===================================================== */
+  display: grid;
+  place-items: center;
+
+  margin: auto;
+
+  border-radius: 20px;
+
+  background: #1b281b;
+
+  font-size: 30px;
+}
+
+.auth-message {
+  margin-top: 15px;
+
+  padding: 11px;
+
+  border-radius: 12px;
+
+  background: #1c251d;
+
+  color: #b7c0b8;
+
+  font-size: 12px;
+}
+
+.auth-switch {
+  margin-top: 17px;
+
+  border: 0;
+
+  background: transparent;
+
+  color: #a5f51a;
+
+  cursor: pointer;
+
+  font-size: 13px;
+}
+
+/* PROFILE */
 
 .modal-background {
   position: fixed;
@@ -1243,7 +1848,8 @@ button {
 
   padding: 20px;
 
-  background: rgba(0,0,0,.72);
+  background:
+    rgba(0,0,0,.72);
 
   backdrop-filter: blur(10px);
 }
@@ -1255,7 +1861,9 @@ button {
 
   padding: 35px;
 
-  border: 1px solid rgba(255,255,255,.1);
+  border:
+    1px solid rgba(255,255,255,.1);
+
   border-radius: 25px;
 
   background: #111612;
@@ -1266,7 +1874,6 @@ button {
 
 .profile-modal h2 {
   margin-top: 0;
-
   text-align: center;
 }
 
@@ -1297,33 +1904,125 @@ button {
 
   margin: 20px auto;
 
-  display: grid;
-  place-items: center;
-
-  border: 3px solid #a5f51a;
-  border-radius: 50%;
-
-  overflow: hidden;
-
-  background: #1a211b;
-
   font-size: 40px;
 }
 
-.modal-avatar img {
+.logout-button {
   width: 100%;
-  height: 100%;
 
-  object-fit: cover;
+  margin-top: 10px;
+
+  padding: 12px;
+
+  border:
+    1px solid rgba(255,80,80,.2);
+
+  border-radius: 12px;
+
+  background: rgba(100,20,20,.2);
+
+  color: #ff8b8b;
+
+  cursor: pointer;
 }
 
+/* LOADING */
 
-/* =====================================================
-   MOBILE
-===================================================== */
+.loading-screen {
+  min-height: 100vh;
+
+  display: grid;
+  place-items: center;
+
+  align-content: center;
+
+  gap: 10px;
+
+  background: #060906;
+}
+
+.loading-logo {
+  font-size: 32px;
+  font-weight: 900;
+}
+
+.loading-logo span {
+  color: #a5f51a;
+}
+
+/* NAV */
+
+.bottom-nav {
+  position: fixed;
+
+  z-index: 30;
+
+  left: 50%;
+  bottom: 17px;
+
+  transform:
+    translateX(-50%);
+
+  width: min(650px, 92%);
+
+  height: 70px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, 1fr);
+
+  padding: 7px;
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  border-radius: 22px;
+
+  background:
+    rgba(15,19,16,.92);
+
+  backdrop-filter: blur(20px);
+
+  box-shadow:
+    0 18px 55px rgba(0,0,0,.55);
+}
+
+.nav-button {
+  border: 0;
+  border-radius: 16px;
+
+  background: transparent;
+
+  color: #687068;
+
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 3px;
+
+  font-size: 10px;
+}
+
+.nav-icon {
+  font-size: 22px;
+}
+
+.nav-button.active {
+  color: #a5f51a;
+
+  background:
+    rgba(165,245,26,.09);
+}
+
+/* MOBILE */
 
 @media (max-width: 750px) {
-
   .topbar {
     height: 65px;
     padding: 0 20px;
@@ -1332,28 +2031,6 @@ button {
   .content {
     width: 92%;
     padding-top: 30px;
-  }
-
-  .welcome h1 {
-    font-size: 34px;
-  }
-
-  .rank-card {
-    padding: 23px;
-  }
-
-  .rank-badge {
-    width: 58px;
-    height: 58px;
-
-    right: 20px;
-    top: 20px;
-
-    font-size: 27px;
-  }
-
-  .progress-text {
-    font-size: 10px;
   }
 
   .tour-card {
@@ -1369,44 +2046,58 @@ button {
   }
 
   .tour-stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns:
+      repeat(2, 1fr);
+
     gap: 23px;
   }
 
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns:
+      repeat(2, 1fr);
   }
 
   .rank-levels {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns:
+      repeat(2, 1fr);
   }
 
-  .map-placeholder {
-    height: 500px;
+  .real-map {
+    height: 58vh;
+    min-height: 430px;
+
+    border-radius: 17px;
   }
 
-  .saved-tour-image {
-    width: 95px;
-    height: 85px;
+  .bikepark-list {
+    grid-template-columns: 1fr;
   }
 
-  .saved-tour {
-    gap: 13px;
+  .map-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .setup-card {
+  .location-button {
+    width: 100%;
+  }
+
+  .setup-card,
+  .auth-card {
     padding: 30px 23px;
   }
+    .map-search {
+    height: 55px;
+    border-radius: 15px;
+    padding: 0 14px;
+  }
 
+  .map-search input {
+    font-size: 14px;
+  }
 }
 
-
-/* =====================================================
-   VERY SMALL PHONES
-===================================================== */
-
 @media (max-width: 430px) {
-
   .content {
     width: 94%;
   }
@@ -1424,12 +2115,248 @@ button {
     font-size: 9px;
   }
 
-  .tour-stats strong {
-    font-size: 19px;
-  }
-
   .rank-levels {
     grid-template-columns: 1fr;
   }
 
+  .real-map {
+    min-height: 390px;
+  }
+
+  .bikepark-card {
+    left: 12px;
+    bottom: 12px;
+
+    width: calc(100% - 24px);
+  }
+}
+/* =========================================
+   FREUNDE - PROFILBILDER
+========================================= */
+
+.large-avatar {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: #182019;
+  border: 2px solid #9cff00;
+}
+
+.large-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Suchergebnisse */
+
+.friend-result {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  margin-top: 8px;
+  background: #111613;
+}
+
+.friend-result .friend-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-result .friend-details strong {
+  display: block;
+  font-size: 16px;
+}
+
+.friend-result .friend-details span {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.add-friend-button {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 13px;
+  background: #9cff00;
+  color: #071000;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.add-friend-button:hover {
+  transform: translateY(-1px);
+}
+/* =========================================
+   FREUNDSCHAFTSANFRAGEN
+========================================= */
+
+.friends-add-box,
+.friends-section {
+  margin-top: 24px;
+}
+
+.friends-add-box {
+  padding: 22px;
+  border-radius: 18px;
+  background: #101512;
+  border: 1px solid #263029;
+}
+
+.friends-add-box h2 {
+  margin: 0 0 6px;
+}
+
+.friends-add-box p {
+  margin: 0 0 16px;
+  opacity: 0.6;
+}
+
+.friend-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: #080b09;
+  border: 1px solid #303a32;
+}
+
+.friend-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: white;
+  font-size: 15px;
+}
+
+.friend-search-results {
+  margin-top: 10px;
+}
+
+.friend-result,
+.friend-request {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  margin-top: 8px;
+  border-radius: 14px;
+  background: #111613;
+  border: 1px solid #242d27;
+}
+
+.large-avatar {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #182019;
+  border: 2px solid #9cff00;
+  font-size: 25px;
+}
+
+.large-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.friend-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-details strong {
+  display: block;
+  font-size: 16px;
+}
+
+.friend-details span {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.add-friend-button {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 13px;
+  background: #9cff00;
+  color: #071000;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.request-buttons {
+  display: flex;
+  gap: 7px;
+}
+
+.accept-button,
+.reject-button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.accept-button {
+  background: #9cff00;
+  color: #071000;
+}
+
+.reject-button {
+  background: #292e2b;
+  color: white;
+}
+
+.friend-search-info {
+  padding: 14px;
+  opacity: 0.6;
+  font-size: 14px;
+}
+
+.empty-friends {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 45px 20px;
+  border-radius: 18px;
+  background: #101512;
+  border: 1px solid #263029;
+}
+
+.empty-friends span {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.empty-friends strong {
+  font-size: 18px;
+}
+
+.empty-friends small {
+  margin-top: 7px;
+  opacity: 0.55;
 }
