@@ -5,9 +5,10 @@ import {
   Map,
   NavigationControl,
   Marker,
+  LngLatBounds,
   setWorkerUrl,
 } from 'maplibre-gl'
-
+import RecordingPage from "./RecordingPage";
 import maplibreWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 setWorkerUrl(maplibreWorker)
 
@@ -499,39 +500,39 @@ function App() {
   const [showProfile, setShowProfile] = useState(false)
 
   useEffect(() => {
-  let mounted = true
+    let mounted = true
 
-  const loadSession = async () => {
-    const { data, error } = await supabase.auth.getSession()
+    const loadSession = async () => {
+      const { data, error } = await supabase.auth.getSession()
 
-    if (!mounted) return
+      if (!mounted) return
 
-    if (error) {
-      console.error('Fehler beim Laden der Session:', error)
-      setSession(null)
-    } else {
-      setSession(data.session ?? null)
+      if (error) {
+        console.error('Fehler beim Laden der Session:', error)
+        setSession(null)
+      } else {
+        setSession(data.session ?? null)
+      }
+
+      setLoading(false)
     }
 
-    setLoading(false)
-  }
+    loadSession()
 
-  loadSession()
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (!mounted) return
 
-  const {
-    data: { subscription },
-  } = supabase.auth.onAuthStateChange((_event, newSession) => {
-    if (!mounted) return
+      setSession(newSession ?? null)
+      setLoading(false)
+    })
 
-    setSession(newSession ?? null)
-    setLoading(false)
-  })
-
-  return () => {
-    mounted = false
-    subscription.unsubscribe()
-  }
-}, [])
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   useEffect(() => {
     if (!session?.user) {
@@ -550,6 +551,7 @@ function App() {
       .single()
 
     if (error) {
+      console.error('Fehler beim Laden des Profils:', error)
       setProfile(null)
       return
     }
@@ -613,6 +615,7 @@ function App() {
 
   return (
     <div className="app">
+
       <header className="topbar">
         <button
           className="brand"
@@ -644,6 +647,7 @@ function App() {
       </header>
 
       <main className="content">
+
         {activePage === 'home' && (
           <HomePage
             profile={profile}
@@ -651,19 +655,41 @@ function App() {
           />
         )}
 
-        {activePage === 'tours' && <ToursPage />}
+        {activePage === 'tours' && (
+        <ToursPage setActivePage={setActivePage} />
+        )}
 
-        {activePage === 'stats' && <StatsPage />}
+        {activePage === 'recording' && (
+          <RecordingPage
+            onFinish={() => setActivePage('tours')}
+          />
+        )}
 
-{activePage === 'friends' && (
-  <FriendsPage
-    setActiveChat={setActiveChat}
-  />
-)}
+        {activePage === 'stats' && (
+          <StatsPage />
+        )}
 
-        {activePage === 'rank' && <RankPage />}
+       {activePage === 'friends' && !activeChat && (
+          <FriendsPage
+            setActiveChat={setActiveChat}
+          />
+        )}
 
-        {activePage === 'map' && <MapPage />}
+        {activeChat && (
+          <ChatPage
+            friend={activeChat}
+            onBack={() => setActiveChat(null)}
+          />
+        )}
+
+        {activePage === 'rank' && (
+          <RankPage />
+        )}
+
+        {activePage === 'map' && (
+          <MapPage />
+        )}
+
       </main>
 
       <Navigation
@@ -682,9 +708,11 @@ function App() {
           onLogout={logout}
         />
       )}
+
     </div>
   )
 }
+
 
 /* =====================================================
    LOGIN / REGISTRIERUNG
@@ -1062,14 +1090,14 @@ function HomePage({
         </div>
       </section>
 
-      <button
-        className="start-button"
-        onClick={() =>
-          setActivePage('map')
-        }
-      >
-        ▶ &nbsp; TOUR STARTEN
-      </button>
+<button
+  className="start-button"
+  onClick={() =>
+    setActivePage('recording')
+  }
+>
+  ▶ &nbsp; TOUR AUFZEICHNEN
+</button>
     </>
   )
 }
@@ -1094,64 +1122,489 @@ function Stat({
    TOUREN
 ===================================================== */
 
-function ToursPage() {
+function ToursPage({ setActivePage }) {
+  const [tours, setTours] = useState([])
+  const [selectedTour, setSelectedTour] = useState(null)
+
+  useEffect(() => {
+    loadTours()
+  }, [])
+
+  const loadTours = () => {
+    const savedTours = JSON.parse(
+      localStorage.getItem('mtb_tours') || '[]'
+    )
+
+    setTours(savedTours)
+  }
+
+  const formatTime = (totalSeconds) => {
+    const hours = Math.floor(totalSeconds / 3600)
+
+    const minutes = Math.floor(
+      (totalSeconds % 3600) / 60
+    )
+
+    const seconds = totalSeconds % 60
+
+    return [
+      hours.toString().padStart(2, '0'),
+      minutes.toString().padStart(2, '0'),
+      seconds.toString().padStart(2, '0'),
+    ].join(':')
+  }
+
+  const formatDate = (date) => {
+    const tourDate = new Date(date)
+    const today = new Date()
+
+    if (
+      tourDate.toDateString() ===
+      today.toDateString()
+    ) {
+      return 'Heute'
+    }
+
+    const yesterday = new Date()
+    yesterday.setDate(
+      yesterday.getDate() - 1
+    )
+
+    if (
+      tourDate.toDateString() ===
+      yesterday.toDateString()
+    ) {
+      return 'Gestern'
+    }
+
+    return tourDate.toLocaleDateString(
+      'de-DE'
+    )
+  }
+
+  /* ---------------------------------------------
+     TOUR-KARTE
+  --------------------------------------------- */
+
+  if (selectedTour) {
+    return (
+      <TourDetailPage
+        tour={selectedTour}
+        onBack={() => setSelectedTour(null)}
+      />
+    )
+  }
+
   return (
     <Page
       title="Meine Touren"
       eyebrow="TOUREN"
     >
-      <div className="tour-list">
-        <div className="saved-tour">
-          <div className="saved-tour-image">
-            ⛰️
-          </div>
+
+      {tours.length === 0 ? (
+
+        <div className="empty-tours">
 
           <div>
-            <span className="difficulty">
-              Schwer
-            </span>
-
-            <h3>
-              Greenhill Line
-            </h3>
-
-            <p>
-              12,4 km · 642 hm · 48:32
-            </p>
-
-            <span className="tour-date">
-              Heute
-            </span>
+            🚵
           </div>
+
+          <h2>
+            Noch keine Touren
+          </h2>
+
+          <p>
+            Zeichne deine erste MTB-Tour
+            auf und sie erscheint hier.
+          </p>
+
+          <button
+            className="start-button"
+            onClick={() =>
+              setActivePage('recording')
+            }
+          >
+            ▶ TOUR AUFZEICHNEN
+          </button>
+
         </div>
 
-        <div className="saved-tour">
-          <div className="saved-tour-image">
-            🌲
-          </div>
+      ) : (
 
-          <div>
-            <span className="difficulty blue">
-              Mittel
-            </span>
+        <div className="tour-list">
 
-            <h3>
-              Alpen Trail
-            </h3>
+          {tours.map((tour) => (
 
-            <p>
-              18,7 km · 820 hm · 1:12:34
-            </p>
+            <button
+              className="saved-tour"
+              key={tour.id}
+              onClick={() =>
+                setSelectedTour(tour)
+              }
+              type="button"
+            >
 
-            <span className="tour-date">
-              Gestern
-            </span>
-          </div>
+              <div className="saved-tour-image">
+                🗺️
+              </div>
+
+              <div className="saved-tour-content">
+
+                <span className="difficulty blue">
+                  MTB TOUR
+                </span>
+
+                <h3>
+                  {tour.name ||
+                    'Meine MTB Tour'}
+                </h3>
+
+                <p>
+                  {Number(
+                    tour.distance || 0
+                  ).toFixed(2)}
+                  {' km · '}
+                  {Math.round(
+                    tour.elevation || 0
+                  )}
+                  {' hm · '}
+                  {formatTime(
+                    tour.duration || 0
+                  )}
+                </p>
+
+                <span className="tour-date">
+                  {formatDate(tour.date)}
+                </span>
+
+              </div>
+
+              <span className="saved-tour-arrow">
+                →
+              </span>
+
+            </button>
+
+          ))}
+
         </div>
-      </div>
+
+      )}
+
     </Page>
   )
 }
+
+/* =====================================================
+   TOUR DETAIL
+===================================================== */
+
+function TourDetailPage({
+  tour,
+  onBack,
+}) {
+  const mapContainer = useRef(null)
+  const mapRef = useRef(null)
+
+  useEffect(() => {
+    if (!mapContainer.current) return
+
+    const coordinates =
+      tour.path ||
+      tour.route ||
+      tour.coordinates ||
+      []
+
+    if (
+      !Array.isArray(coordinates) ||
+      coordinates.length === 0
+    ) {
+      return
+    }
+
+    const map = new Map({
+      container: mapContainer.current,
+
+      style: {
+        version: 8,
+
+        sources: {
+          osm: {
+            type: 'raster',
+
+            tiles: [
+              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            ],
+
+            tileSize: 256,
+
+            attribution:
+              '© OpenStreetMap contributors',
+          },
+        },
+
+        layers: [
+          {
+            id: 'osm',
+            type: 'raster',
+            source: 'osm',
+          },
+        ],
+      },
+
+      center: coordinates[0],
+      zoom: 13,
+
+      attributionControl: true,
+      dragRotate: false,
+      touchZoomRotate: true,
+    })
+
+    mapRef.current = map
+
+    map.on('load', () => {
+
+      /* -----------------------------------------
+         ROUTE-LINIE
+      ----------------------------------------- */
+
+      map.addSource('tour-route', {
+        type: 'geojson',
+
+        data: {
+          type: 'Feature',
+
+          geometry: {
+            type: 'LineString',
+            coordinates,
+          },
+
+          properties: {},
+        },
+      })
+
+      map.addLayer({
+        id: 'tour-route-line',
+
+        type: 'line',
+
+        source: 'tour-route',
+
+        paint: {
+          'line-width': 5,
+          'line-opacity': 0.9,
+        },
+      })
+
+      /* -----------------------------------------
+         STARTPUNKT
+      ----------------------------------------- */
+
+      const startElement =
+        document.createElement('div')
+
+      startElement.className =
+        'tour-start-marker'
+
+      startElement.innerHTML = '▶'
+
+      new Marker({
+        element: startElement,
+        anchor: 'center',
+      })
+        .setLngLat(coordinates[0])
+        .addTo(map)
+
+      /* -----------------------------------------
+         ENDPUNKT
+      ----------------------------------------- */
+
+      const endElement =
+        document.createElement('div')
+
+      endElement.className =
+        'tour-end-marker'
+
+      endElement.innerHTML = '🏁'
+
+      new Marker({
+        element: endElement,
+        anchor: 'bottom',
+      })
+        .setLngLat(
+          coordinates[
+            coordinates.length - 1
+          ]
+        )
+        .addTo(map)
+
+      /* -----------------------------------------
+         KARTE AUF ROUTE ZOOMEN
+      ----------------------------------------- */
+
+      const bounds =
+        coordinates.reduce(
+          (bounds, coordinate) => {
+            return bounds.extend(coordinate)
+          },
+          new LngLatBounds(
+            coordinates[0],
+            coordinates[0]
+          )
+        )
+
+      map.fitBounds(bounds, {
+        padding: 60,
+        duration: 1000,
+      })
+    })
+
+    return () => {
+      map.remove()
+      mapRef.current = null
+    }
+  }, [tour])
+
+  return (
+    <section className="page tour-detail-page">
+
+      <div className="tour-detail-header">
+
+        <button
+          className="back-button"
+          onClick={onBack}
+        >
+          ← Zurück
+        </button>
+
+        <div>
+          <p className="eyebrow">
+            AUFGEZEICHNETE TOUR
+          </p>
+
+          <h1>
+            {tour.name ||
+              'Meine MTB Tour'}
+          </h1>
+        </div>
+
+      </div>
+
+      <div className="tour-detail-map">
+
+        <div
+          ref={mapContainer}
+          className="maplibre-container"
+        />
+
+        {(!tour.path &&
+          !tour.route &&
+          !tour.coordinates) && (
+
+          <div className="tour-no-route">
+            🗺️
+            <strong>
+              Keine GPS-Strecke gespeichert
+            </strong>
+
+            <span>
+              Diese Tour enthält keine
+              aufgezeichnete Route.
+            </span>
+          </div>
+
+        )}
+
+      </div>
+
+      <div className="tour-detail-info">
+
+        <div className="tour-detail-stat">
+          <strong>
+            {Number(
+              tour.distance || 0
+            ).toFixed(2)}
+          </strong>
+
+          <span>km</span>
+
+          <small>Distanz</small>
+        </div>
+
+        <div className="tour-detail-stat">
+          <strong>
+            {Math.round(
+              tour.elevation || 0
+            )}
+          </strong>
+
+          <span>hm</span>
+
+          <small>Höhenmeter</small>
+        </div>
+
+        <div className="tour-detail-stat">
+          <strong>
+            {formatTourDuration(
+              tour.duration || 0
+            )}
+          </strong>
+
+          <small>Dauer</small>
+        </div>
+
+      </div>
+
+    </section>
+  )
+}
+
+
+/* =====================================================
+   TOUR ZEIT FORMATIEREN
+===================================================== */
+
+function formatTourDuration(totalSeconds) {
+  const hours =
+    Math.floor(totalSeconds / 3600)
+
+  const minutes =
+    Math.floor(
+      (totalSeconds % 3600) / 60
+    )
+
+  const seconds =
+    totalSeconds % 60
+
+  if (hours > 0) {
+    return (
+      hours
+        .toString()
+        .padStart(2, '0') +
+      ':' +
+      minutes
+        .toString()
+        .padStart(2, '0') +
+      ':' +
+      seconds
+        .toString()
+        .padStart(2, '0')
+    )
+  }
+
+  return (
+    minutes
+      .toString()
+      .padStart(2, '0') +
+    ':' +
+    seconds
+      .toString()
+      .padStart(2, '0')
+  )
+}
+
+
+
 
 /* =====================================================
    STATISTIKEN
