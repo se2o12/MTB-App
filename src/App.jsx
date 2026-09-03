@@ -492,9 +492,112 @@ const GRAVITY_CARD_PARKS = [
 ===================================================== */
 
 function App() {
+    const VAPID_PUBLIC_KEY = 'BF_QFYTRdsDj62n418wGDT6VdFPE1eU6PQ2RKmu1wHaetyeRSYCQf0NJZzznhxBpwtSFewexyn9u4DCAIXAbcfg'
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+
+    const rawData = window.atob(base64)
+
+    return Uint8Array.from(
+      [...rawData].map((char) => char.charCodeAt(0))
+    )
+  }
+
+  const enablePushNotifications = async () => {
+    try {
+      if (!session?.user) {
+        alert('Du musst eingeloggt sein.')
+        return
+      }
+
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        alert('Push-Benachrichtigungen werden auf diesem Gerät nicht unterstützt.')
+        return
+      }
+
+      const permission = await Notification.requestPermission()
+
+      if (permission !== 'granted') {
+        alert('Benachrichtigungen wurden nicht erlaubt.')
+        return
+      }
+
+      const registration = await navigator.serviceWorker.register('/sw.js')
+
+      const subscription =
+        await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey:
+            urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        })
+
+      const subscriptionData = subscription.toJSON()
+
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert(
+          {
+            user_id: session.user.id,
+            endpoint: subscriptionData.endpoint,
+            p256dh: subscriptionData.keys?.p256dh,
+            auth: subscriptionData.keys?.auth,
+          },
+          {
+            onConflict: 'endpoint',
+          }
+        )
+
+      if (error) {
+        console.error('Push Subscription:', error)
+        alert('Benachrichtigungen konnten nicht aktiviert werden.')
+        return
+      }
+
+      alert('🔔 Benachrichtigungen sind jetzt aktiviert!')
+    } catch (error) {
+      console.error('Push-Fehler:', error)
+      alert('Push-Benachrichtigungen konnten nicht eingerichtet werden.')
+    }
+  }
+    const disablePushNotifications = async () => {
+    try {
+      if (!session?.user) return
+
+      const registration = await navigator.serviceWorker.getRegistration('/sw.js')
+
+      if (registration) {
+        const subscription =
+          await registration.pushManager.getSubscription()
+
+        if (subscription) {
+          await subscription.unsubscribe()
+        }
+      }
+
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('user_id', session.user.id)
+
+      if (error) {
+        console.error('Push deaktivieren:', error)
+        alert('Benachrichtigungen konnten nicht deaktiviert werden.')
+        return
+      }
+
+      alert('🔕 Benachrichtigungen wurden deaktiviert.')
+    } catch (error) {
+      console.error('Push-Deaktivierung:', error)
+    }
+  }
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [pushEnabled, setPushEnabled] = useState(false)
   const [activePage, setActivePage] = useState('home')
   const [activeChat, setActiveChat] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
@@ -542,7 +645,34 @@ function App() {
 
     loadProfile(session.user.id)
   }, [session])
+  useEffect(() => {
+    const checkPushStatus = async () => {
+      if (!session?.user) {
+        setPushEnabled(false)
+        return
+      }
 
+      if (!('serviceWorker' in navigator)) {
+        setPushEnabled(false)
+        return
+      }
+
+      const registration =
+        await navigator.serviceWorker.getRegistration('/sw.js')
+
+      if (!registration) {
+        setPushEnabled(false)
+        return
+      }
+
+      const subscription =
+        await registration.pushManager.getSubscription()
+
+      setPushEnabled(!!subscription)
+    }
+
+    checkPushStatus()
+  }, [session])
   const loadProfile = async (userId) => {
     const { data, error } = await supabase
       .from('profiles')
