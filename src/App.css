@@ -3674,8 +3674,8 @@ button:disabled {
   }
 
   .rank-levels > div img {
-    width: 56px;
-    height: 56Spx;
+    width: 100px;
+    height: 100px;
     object-fit: contain;
   }
 
