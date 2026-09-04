@@ -231,26 +231,22 @@ button:disabled {
 
 .rank-badge {
   position: absolute;
-
   right: 35px;
   top: 28px;
-
   width: 78px;
   height: 78px;
-
   display: grid;
   place-items: center;
-
-  border:
-    2px solid #a5f51a;
-
+  border: 2px solid #a5f51a;
   border-radius: 23px;
-
   background: #172016;
-
-  font-size: 37px;
-
   transform: rotate(8deg);
+}
+
+.rank-badge img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
 }
 
 .progress {
@@ -266,12 +262,11 @@ button:disabled {
 }
 
 .progress-bar {
-  width: 82%;
+  width: 0%;
   height: 100%;
-
   border-radius: inherit;
-
   background: #a5f51a;
+  transition: width 0.4s ease;
 }
 
 .progress-text {
