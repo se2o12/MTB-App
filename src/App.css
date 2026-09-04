@@ -3479,3 +3479,697 @@ button:disabled {
     font-size: 13px;
   }
 }
+/* =====================================================
+   RANG ICONS
+===================================================== */
+
+.rank-big-icon img {
+  width: 230px;
+  height: 230px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.rank-big-icon {
+  position: relative;
+  overflow: hidden;
+}
+
+.rank-big-icon {
+  position: relative;
+  overflow: visible;
+  animation: currentRankPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes currentRankPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px rgba(255,255,255,.15));
+  }
+
+  50% {
+    transform: scale(1.045);
+    filter: drop-shadow(0 0 14px rgba(255,255,255,.45));
+  }
+}
+
+.rank-levels > div {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rank-levels > div img {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.rank-levels > div.current {
+  transform: scale(1.02);
+}
+
+.rank-levels > div.current img {
+  width: 82px;
+  height: 82px;
+}
+/* =====================================================
+   RANG ANIMATIONEN
+===================================================== */
+
+@keyframes rankPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes rankBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes rankFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes rankShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes rankGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(255,255,255,.08));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(255,255,255,.65));
+  }
+}
+
+@keyframes rankEnergy {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(255,255,255,.2));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 22px rgba(255,255,255,.8));
+  }
+}
+
+@keyframes rankTitan {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(255,255,255,.2));
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 28px rgba(255,255,255,.9));
+  }
+}
+
+@keyframes rankLegend {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 5px rgba(255,255,255,.2));
+  }
+  50% {
+    transform: scale(1.1) rotate(2deg);
+    filter: drop-shadow(0 0 30px rgba(255,255,255,.9));
+  }
+}
+
+@keyframes rankElite {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 8px rgba(255,255,255,.3));
+  }
+  50% {
+    transform: scale(1.12) rotate(-2deg);
+    filter: drop-shadow(0 0 35px rgba(255,255,255,1));
+  }
+}
+
+/* Animationen für die einzelnen Ränge */
+
+
+/* =====================================================
+   MOBILE RANG-LAYOUT
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .rank-big-card {
+    padding: 24px 18px;
+    border-radius: 22px;
+    text-align: center;
+  }
+
+  .rank-big-icon {
+    width: 130px;
+    height: 130px;
+    margin: 0 auto 12px;
+  }
+
+  .rank-big-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .rank-big-card h2 {
+    font-size: 28px;
+    margin: 6px 0;
+  }
+
+  .rank-big-card strong {
+    font-size: 18px;
+  }
+
+  .rank-explanation {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 12px;
+  }
+
+  .rank-levels {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .rank-levels > div {
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 64px;
+    padding: 8px 12px;
+    border-radius: 16px;
+  }
+
+  .rank-levels > div img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+  }
+
+  .rank-levels > div span {
+    font-size: 12px;
+    opacity: .55;
+  }
+
+  .rank-levels > div strong {
+    font-size: 14px;
+    text-align: left;
+  }
+
+  .rank-levels > div small {
+    font-size: 11px;
+    opacity: .65;
+    white-space: nowrap;
+  }
+
+  .rank-levels > div.current {
+    transform: scale(1.02);
+  }
+}
+/* =====================================================
+   SUBTILE RANG-ICON ANIMATIONEN
+===================================================== */
+
+.rank-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center;
+}
+
+/* 01 – Trail Rider
+   Ruhiges, leichtes Atmen */
+.rank-icon-1 {
+  animation: trailRider 3.2s ease-in-out infinite;
+}
+
+@keyframes trailRider {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(255,255,255,.15));
+  }
+  50% {
+    transform: scale(1.025);
+    filter: drop-shadow(0 0 7px rgba(255,255,255,.35));
+  }
+}
+
+
+/* 02 – Dirt Rider
+   Kleine Erd-/Stoßbewegung */
+.rank-icon-2 {
+  animation: dirtRider 2.8s ease-in-out infinite;
+}
+
+@keyframes dirtRider {
+  0%, 85%, 100% {
+    transform: translateY(0) rotate(0);
+  }
+  90% {
+    transform: translateY(1px) rotate(-1deg);
+  }
+  95% {
+    transform: translateY(-1px) rotate(1deg);
+  }
+}
+
+
+/* 03 – Mountain Rider
+   Langsames Schweben */
+.rank-icon-3 {
+  animation: mountainRider 4s ease-in-out infinite;
+}
+
+@keyframes mountainRider {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+
+/* 04 – Gravity Rider
+   Leichte Schwerkraftbewegung */
+.rank-icon-4 {
+  animation: gravityRider 3s ease-in-out infinite;
+}
+
+@keyframes gravityRider {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(3px);
+  }
+  55% {
+    transform: translateY(0);
+  }
+}
+
+
+/* 05 – Peak Rider
+   Licht-Glow */
+.rank-icon-5 {
+  animation: peakRider 3s ease-in-out infinite;
+}
+
+@keyframes peakRider {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(255,255,255,.15));
+  }
+  50% {
+    filter: drop-shadow(0 0 11px rgba(255,255,255,.5));
+  }
+}
+
+
+/* 06 – Enduro Rider
+   Etwas schnellerer Energie-Puls */
+.rank-icon-6 {
+  animation: enduroRider 2.2s ease-in-out infinite;
+}
+
+@keyframes enduroRider {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(255,255,255,.15));
+  }
+  50% {
+    transform: scale(1.035);
+    filter: drop-shadow(0 0 10px rgba(255,255,255,.45));
+  }
+}
+
+
+/* 07 – Titan Rider
+   Dezenter Eis-Glow */
+.rank-icon-7 {
+  animation: titanRider 3s ease-in-out infinite;
+}
+
+@keyframes titanRider {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 2px rgba(150,220,255,.2))
+      drop-shadow(0 0 5px rgba(100,190,255,.1));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 6px rgba(170,235,255,.55))
+      drop-shadow(0 0 13px rgba(90,190,255,.3));
+  }
+}
+
+
+/* 08 – Pro Rider
+   Kleiner Energie-Impuls */
+.rank-icon-8 {
+  animation: proRider 2s ease-in-out infinite;
+}
+
+@keyframes proRider {
+  0%, 100% {
+    transform: scale(1);
+  }
+  48% {
+    transform: scale(1.025);
+  }
+  52% {
+    transform: scale(1.04);
+  }
+}
+
+
+/* 09 – Legend Rider
+   Dezenter Feuer-Glow */
+.rank-icon-9 {
+  animation: legendRider 2s ease-in-out infinite;
+}
+
+@keyframes legendRider {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 2px rgba(255,100,30,.2));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 7px rgba(255,150,40,.55))
+      drop-shadow(0 0 13px rgba(255,60,20,.2));
+  }
+}
+
+
+/* 10 – Elite Rider
+   Edle, sehr dezente Aura */
+.rank-icon-10 {
+  animation: eliteRider 2.8s ease-in-out infinite;
+}
+
+@keyframes eliteRider {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 3px rgba(255,255,255,.2));
+  }
+  50% {
+    transform: scale(1.035);
+    filter:
+      drop-shadow(0 0 8px rgba(255,255,255,.55))
+      drop-shadow(0 0 15px rgba(255,255,255,.2));
+  }
+}
+/* =====================================================
+   RANG DETAIL POPUP
+===================================================== */
+
+.rank-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(10px);
+
+  padding: 20px;
+}
+
+.rank-modal {
+  position: relative;
+
+  width: min(380px, 100%);
+  padding: 35px 25px 30px;
+
+  border-radius: 28px;
+
+  background: rgba(18, 18, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  text-align: center;
+
+  animation: rankModalOpen 0.25s ease-out;
+}
+
+@keyframes rankModalOpen {
+  0% {
+    opacity: 0;
+    transform: scale(0.75) translateY(15px);
+  }
+
+  70% {
+    opacity: 1;
+    transform: scale(1.04) translateY(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.rank-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 15px;
+
+  width: 36px;
+  height: 36px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+
+  font-size: 25px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.rank-modal-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(1.08);
+}
+
+.rank-modal-icon {
+  display: block;
+
+  width: 220px;
+  height: 220px;
+
+  margin: 5px auto 12px;
+
+  object-fit: contain;
+}
+
+.rank-modal h2 {
+  margin: 8px 0 5px;
+
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.rank-modal strong {
+  display: block;
+
+  font-size: 18px;
+  opacity: 0.7;
+}
+/* =====================================================
+   RANG GLINT – leichter Minecraft-Enchant-Effekt
+===================================================== */
+
+.rank-icon {
+  position: relative;
+  overflow: hidden;
+}
+/* Glint-Container */
+.rank-icon-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.rank-icon-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 35%;
+  height: 100%;
+
+  background: linear-gradient(
+  115deg,
+  transparent 0%,
+  transparent 47%,
+  rgba(255,255,255,.35) 50%,
+  transparent 53%,
+  transparent 100%
+);
+
+  pointer-events: none;
+
+  -webkit-mask-image: var(--rank-mask);
+  mask-image: var(--rank-mask);
+
+  -webkit-mask-size: contain;
+  mask-size: contain;
+
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+  -webkit-mask-position: center;
+  mask-position: center;
+
+  animation: rankGlint 12s ease-in-out infinite;
+  animation-delay: var(--glint-delay);
+}
+/* Glint im großen Rang-Popup */
+
+.rank-modal-icon-wrapper {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 5px auto 12px;
+  overflow: hidden;
+}
+
+
+@keyframes rankModalGlint {
+  0% {
+    left: -100%;
+    opacity: 0;
+  }
+
+  8% {
+    opacity: 1;
+  }
+
+  75% {
+    left: 150%;
+    opacity: 0;
+  }
+
+  100% {
+    left: 150%;
+    opacity: 0;
+  }
+}
+
+/* Lichtschimmer */
+.rank-modal-icon-wrapper::after {
+  content: "";
+  position: absolute;
+
+  inset: 0;
+
+  background: linear-gradient(
+  115deg,
+  transparent 0%,
+  transparent 47%,
+  rgba(255,255,255,.08) 49%,
+  rgba(255,255,255,.55) 50%,
+  rgba(255,255,255,.08) 51%,
+  transparent 53%,
+  transparent 100%
+);
+
+  pointer-events: none;
+
+  /* Form des PNGs als Maske verwenden */
+  -webkit-mask-image: url("/ranks/trail-rider.png");
+  mask-image: url("/ranks/trail-rider.png");
+
+  -webkit-mask-size: contain;
+  mask-size: contain;
+
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+  -webkit-mask-position: center;
+  mask-position: center;
+
+  animation: rankModalGlint 6s ease-in-out infinite;
+}
+
+@keyframes rankModalGlint {
+  0% {
+    left: -100%;
+    opacity: 0;
+  }
+
+  /* 0,4 Sekunden warten */
+  4% {
+    left: -100%;
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  78% {
+    left: 150%;
+    opacity: 0;
+  }
+
+  100% {
+    left: 150%;
+    opacity: 0;
+  }
+}
+
+@keyframes rankGlint {
+  0%, 65% {
+    left: -80%;
+    opacity: 0;
+  }
+
+  72% {
+    opacity: 1;
+  }
+
+  88% {
+    left: 145%;
+    opacity: 0;
+  }
+
+  100% {
+    left: 145%;
+    opacity: 0;
+  }
+}
+.rank-item:nth-child(1)  { --glint-delay: 6.4s; }
+.rank-item:nth-child(2)  { --glint-delay: 0.8s; }
+.rank-item:nth-child(3)  { --glint-delay: 4s; }
+.rank-item:nth-child(4)  { --glint-delay: 2.4s; }
+.rank-item:nth-child(5)  { --glint-delay: 5.6s; }
+.rank-item:nth-child(6)  { --glint-delay: 1.6s; }
+.rank-item:nth-child(7)  { --glint-delay: 4.8s; }
+.rank-item:nth-child(8)  { --glint-delay: 3.2s; }
+.rank-item:nth-child(9)  { --glint-delay: 0s; }
+.rank-item:nth-child(10) { --glint-delay: 7.2s; }

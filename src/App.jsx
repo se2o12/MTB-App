@@ -492,112 +492,9 @@ const GRAVITY_CARD_PARKS = [
 ===================================================== */
 
 function App() {
-    const VAPID_PUBLIC_KEY = 'BF_QFYTRdsDj62n418wGDT6VdFPE1eU6PQ2RKmu1wHaetyeRSYCQf0NJZzznhxBpwtSFewexyn9u4DCAIXAbcfg'
-  const urlBase64ToUint8Array = (base64String) => {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-
-    const base64 = (base64String + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/')
-
-    const rawData = window.atob(base64)
-
-    return Uint8Array.from(
-      [...rawData].map((char) => char.charCodeAt(0))
-    )
-  }
-
-  const enablePushNotifications = async () => {
-    try {
-      if (!session?.user) {
-        alert('Du musst eingeloggt sein.')
-        return
-      }
-
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        alert('Push-Benachrichtigungen werden auf diesem Gerät nicht unterstützt.')
-        return
-      }
-
-      const permission = await Notification.requestPermission()
-
-      if (permission !== 'granted') {
-        alert('Benachrichtigungen wurden nicht erlaubt.')
-        return
-      }
-
-      const registration = await navigator.serviceWorker.register('/sw.js')
-
-      const subscription =
-        await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey:
-            urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        })
-
-      const subscriptionData = subscription.toJSON()
-
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .upsert(
-          {
-            user_id: session.user.id,
-            endpoint: subscriptionData.endpoint,
-            p256dh: subscriptionData.keys?.p256dh,
-            auth: subscriptionData.keys?.auth,
-          },
-          {
-            onConflict: 'endpoint',
-          }
-        )
-
-      if (error) {
-        console.error('Push Subscription:', error)
-        alert('Benachrichtigungen konnten nicht aktiviert werden.')
-        return
-      }
-
-      alert('🔔 Benachrichtigungen sind jetzt aktiviert!')
-    } catch (error) {
-      console.error('Push-Fehler:', error)
-      alert('Push-Benachrichtigungen konnten nicht eingerichtet werden.')
-    }
-  }
-    const disablePushNotifications = async () => {
-    try {
-      if (!session?.user) return
-
-      const registration = await navigator.serviceWorker.getRegistration('/sw.js')
-
-      if (registration) {
-        const subscription =
-          await registration.pushManager.getSubscription()
-
-        if (subscription) {
-          await subscription.unsubscribe()
-        }
-      }
-
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .delete()
-        .eq('user_id', session.user.id)
-
-      if (error) {
-        console.error('Push deaktivieren:', error)
-        alert('Benachrichtigungen konnten nicht deaktiviert werden.')
-        return
-      }
-
-      alert('🔕 Benachrichtigungen wurden deaktiviert.')
-    } catch (error) {
-      console.error('Push-Deaktivierung:', error)
-    }
-  }
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [pushEnabled, setPushEnabled] = useState(false)
   const [activePage, setActivePage] = useState('home')
   const [activeChat, setActiveChat] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
@@ -645,34 +542,7 @@ function App() {
 
     loadProfile(session.user.id)
   }, [session])
-  useEffect(() => {
-    const checkPushStatus = async () => {
-      if (!session?.user) {
-        setPushEnabled(false)
-        return
-      }
 
-      if (!('serviceWorker' in navigator)) {
-        setPushEnabled(false)
-        return
-      }
-
-      const registration =
-        await navigator.serviceWorker.getRegistration('/sw.js')
-
-      if (!registration) {
-        setPushEnabled(false)
-        return
-      }
-
-      const subscription =
-        await registration.pushManager.getSubscription()
-
-      setPushEnabled(!!subscription)
-    }
-
-    checkPushStatus()
-  }, [session])
   const loadProfile = async (userId) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -2543,24 +2413,93 @@ function FriendsPage({ setActiveChat }) {
 ===================================================== */
 
 function RankPage() {
+  const ranks = [
+    {
+      level: 1,
+      name: 'Trail Rider',
+      points: 0,
+      icon: '/ranks/trail-rider.png',
+    },
+    {
+      level: 2,
+      name: 'Dirt Rider',
+      points: 500,
+      icon: '/ranks/dirt-rider.png',
+    },
+    {
+      level: 3,
+      name: 'Mountain Rider',
+      points: 1000,
+      icon: '/ranks/mountain-rider.png',
+    },
+    {
+      level: 4,
+      name: 'Gravity Rider',
+      points: 1500,
+      icon: '/ranks/gravity-rider.png',
+    },
+    {
+      level: 5,
+      name: 'Peak Rider',
+      points: 2000,
+      icon: '/ranks/peak-rider.png',
+    },
+    {
+      level: 6,
+      name: 'Enduro Rider',
+      points: 2500,
+      icon: '/ranks/enduro-rider.png',
+    },
+    {
+      level: 7,
+      name: 'Titan Rider',
+      points: 3000,
+      icon: '/ranks/titan-rider.png',
+    },
+    {
+      level: 8,
+      name: 'Pro Rider',
+      points: 4000,
+      icon: '/ranks/pro-rider.png',
+    },
+    {
+      level: 9,
+      name: 'Legend Rider',
+      points: 5000,
+      icon: '/ranks/legend-rider.png',
+    },
+    {
+      level: 10,
+      name: 'Elite Rider',
+      points: 6500,
+      icon: '/ranks/elite-rider.png',
+    },
+  ]
+
+  const currentRank = ranks[0]
+  const [selectedRank, setSelectedRank] = useState(null)
+
   return (
     <Page
       title="Rang"
       eyebrow="DEIN FORTSCHRITT"
     >
       <div className="rank-big-card">
-        <div className="rank-big-icon">
-          🏆
+        <div className={`rank-big-icon rank-${currentRank.level}`}>
+          <img
+            src={currentRank.icon}
+            alt={currentRank.name}
+          />
         </div>
 
         <span className="small-title">
           AKTUELLER RANG
         </span>
 
-        <h2>Pro Rider</h2>
+        <h2>{currentRank.name}</h2>
 
         <strong>
-          2.450 Punkte
+          {currentRank.points.toLocaleString('de-DE')} Punkte
         </strong>
 
         <div className="rank-explanation">
@@ -2571,30 +2510,67 @@ function RankPage() {
       </div>
 
       <div className="rank-levels">
-        <div>
-          <span>01</span>
-          <strong>Rookie</strong>
-          <small>0 Punkte</small>
-        </div>
+        {ranks.map((rank) => (
 
-        <div>
-          <span>02</span>
-          <strong>Trail Rider</strong>
-          <small>500 Punkte</small>
-        </div>
+     <div
+  key={rank.level}
+  className={`rank-item rank-${rank.level} ${rank.level === currentRank.level ? 'current' : ''}`}
+  onClick={() => setSelectedRank(rank)}
+>
+          
+<div className="rank-icon-wrapper">
+  <img
+    src={rank.icon}
+    alt={rank.name}
+    className={`rank-icon rank-icon-${rank.level}`}
+  />
+</div>
 
-        <div className="current">
-          <span>03</span>
-          <strong>Pro Rider</strong>
-          <small>2.000 Punkte</small>
-        </div>
+            <span>
+              {String(rank.level).padStart(2, '0')}
+            </span>
 
-        <div>
-          <span>04</span>
-          <strong>Elite Rider</strong>
-          <small>3.000 Punkte</small>
-        </div>
+            <strong>{rank.name}</strong>
+
+            <small>
+              {rank.points.toLocaleString('de-DE')} Punkte
+            </small>
+          </div>
+        ))}
       </div>
+      {selectedRank && (
+  <div className="rank-modal-overlay" onClick={() => setSelectedRank(null)}>
+    <div
+      className="rank-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        className="rank-modal-close"
+        onClick={() => setSelectedRank(null)}
+      >
+        ×
+      </button>
+
+      <div className={`rank-modal-icon-wrapper rank-modal-icon-${selectedRank.level}`}>
+  <img
+    src={selectedRank.icon}
+    alt={selectedRank.name}
+    className={`rank-modal-icon rank-icon-${selectedRank.level}`}
+  />
+</div>
+
+      <span className="small-title">
+        RANG {String(selectedRank.level).padStart(2, '0')}
+      </span>
+
+      <h2>{selectedRank.name}</h2>
+
+      <strong>
+        {selectedRank.points.toLocaleString('de-DE')} Punkte
+      </strong>
+    </div>
+  </div>
+)}
     </Page>
   )
 }
