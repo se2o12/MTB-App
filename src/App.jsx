@@ -1000,42 +1000,46 @@ function HomePage({
       </section>
 
       <section className="rank-card">
-        <div className="rank-content">
-          <span className="small-title">
-            DEIN RANG
-          </span>
+  <div className="rank-content">
+    <span className="small-title">
+      DEIN RANG
+    </span>
 
-          <h2>{profile.rank}</h2>
+    <h2>Trail Rider</h2>
 
-          <div className="rank-level">
-            Level {profile.level}
-          </div>
+    <div className="rank-level">
+      Level 1
+    </div>
 
-          <strong>
-            {Number(profile.points || 0)
-              .toLocaleString('de-DE')}{' '}
-            Punkte
-          </strong>
-        </div>
+    <strong>
+      0 Punkte
+    </strong>
+  </div>
 
-        <div className="rank-badge">
-          🏆
-        </div>
+  <div className="rank-badge">
+    <img
+      src="/ranks/trail-rider.png"
+      alt="Trail Rider"
+    />
+  </div>
 
-        <div className="progress">
-          <div className="progress-bar"></div>
-        </div>
+  <div className="progress">
+    <div
+      className="progress-bar"
+      style={{ width: '0%' }}
+    ></div>
+  </div>
 
-        <div className="progress-text">
-          <span>
-            Nächstes Level: Elite Rider
-          </span>
+  <div className="progress-text">
+    <span>
+      Nächstes Level: Dirt Rider
+    </span>
 
-          <span>
-            3.000 Punkte
-          </span>
-        </div>
-      </section>
+    <span>
+      500 Punkte
+    </span>
+  </div>
+</section>
 
       <section className="section">
         <div className="section-heading">
