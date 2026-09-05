@@ -455,7 +455,7 @@ if (saveError) {
   )
 
   setError(
-    'Tour konnte nicht gespeichert werden.'
+    `Speichern fehlgeschlagen: ${saveError.message}`
   )
 
   return
