@@ -1,5 +1,6 @@
 
 import { useEffect, useRef, useState } from 'react'
+import { supabase } from './supabaseClient'
 import {
   MapContainer,
   TileLayer,
@@ -439,13 +440,25 @@ const { error: saveError } = await supabase
   .from('tours')
   .insert({
     user_id: user.id,
+
     title:
       tourName.trim() ||
       'Meine MTB Tour',
-    started_at: tour.date,
-    duration_s: tour.duration,
-    distance_m: tour.distance * 1000,
-    elevation_gain_m: tour.elevation,
+
+    started_at:
+      tour.date,
+
+    duration_s:
+      tour.duration,
+
+    distance_m:
+      tour.distance * 1000,
+
+    elevation_gain_m:
+      tour.elevation,
+
+    track:
+      trackRef.current,
   })
 
 if (saveError) {
