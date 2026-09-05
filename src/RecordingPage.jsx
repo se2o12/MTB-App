@@ -115,218 +115,269 @@ function RecordingPage({ onFinish }) {
   }, [recording, paused])
 
   /* =====================================================
-     GPS
-  ===================================================== */
+   GPS
+===================================================== */
 
-  const startGPS = () => {
-    if (!navigator.geolocation) {
-      setError(
-        'Dein Gerät unterstützt keine GPS-Ortung.'
-      )
-      return
-    }
+const recordingRef = useRef(false)
+const pausedRef = useRef(false)
 
-    setError('')
+/*
+   React-State und Refs synchron halten
+*/
+useEffect(() => {
+  recordingRef.current = recording
+}, [recording])
 
-    watchIdRef.current =
-      navigator.geolocation.watchPosition(
-        (position) => {
-          const {
-            latitude,
-            longitude,
-            altitude,
-            accuracy,
-          } = position.coords
+useEffect(() => {
+  pausedRef.current = paused
+}, [paused])
 
-          /*
-             Ungenaue GPS-Werte ignorieren
-          */
+const startGPS = () => {
+  if (!navigator.geolocation) {
+    setError(
+      'Dein Gerät unterstützt keine GPS-Ortung.'
+    )
+    return
+  }
 
-          if (accuracy && accuracy > 100) {
-            return
-          }
+  /*
+     Alten GPS-Watcher sicher beenden
+  */
+  if (watchIdRef.current !== null) {
+    navigator.geolocation.clearWatch(
+      watchIdRef.current
+    )
 
-          const newPosition = {
+    watchIdRef.current = null
+  }
+
+  setError('')
+
+  watchIdRef.current =
+    navigator.geolocation.watchPosition(
+      (position) => {
+        const {
+          latitude,
+          longitude,
+          altitude,
+          accuracy,
+        } = position.coords
+
+        /*
+           Ungenaue GPS-Werte ignorieren
+        */
+        if (
+          accuracy !== null &&
+          accuracy !== undefined &&
+          accuracy > 100
+        ) {
+          return
+        }
+
+        const newPosition = {
+          lat: latitude,
+          lon: longitude,
+          altitude:
+            altitude ?? null,
+          accuracy:
+            accuracy ?? null,
+          time: Date.now(),
+        }
+
+        /*
+           Aktuelle Position immer anzeigen
+        */
+        setCurrentPosition(newPosition)
+
+        /*
+           Nur während einer aktiven,
+           nicht pausierten Tour tracken
+        */
+        if (
+          !recordingRef.current ||
+          pausedRef.current
+        ) {
+          return
+        }
+
+        /*
+           Erste GPS-Position
+        */
+        if (!lastPositionRef.current) {
+          lastPositionRef.current =
+            newPosition
+
+          const firstPoint = {
             lat: latitude,
             lon: longitude,
-            altitude:
-              altitude ?? null,
-            time: Date.now(),
           }
 
-          setCurrentPosition(newPosition)
+          trackRef.current = [
+            firstPoint,
+          ]
 
-          /*
-             Erste GPS-Position
-          */
+          setTrack([
+            firstPoint,
+          ])
 
-          if (!lastPositionRef.current) {
-            lastPositionRef.current =
-              newPosition
+          return
+        }
 
-            trackRef.current = [
-              {
-                lat: latitude,
-                lon: longitude,
-              },
-            ]
+        const previous =
+          lastPositionRef.current
 
-            setTrack([
-              {
-                lat: latitude,
-                lon: longitude,
-              },
-            ])
-
-            return
-          }
-
-          const previous =
-            lastPositionRef.current
-
-          /*
-             Nur während der Aufnahme
-             Strecke hinzufügen
-          */
-
-          if (!paused) {
-            const meters =
-              calculateDistance(
-                previous.lat,
-                previous.lon,
-                latitude,
-                longitude
-              )
-
-            /*
-               Kleine GPS-Sprünge ignorieren.
-               Extrem große Sprünge ebenfalls.
-            */
-
-            if (
-              meters > 2 &&
-              meters < 200
-            ) {
-              setDistance(
-                (value) =>
-                  value + meters
-              )
-
-              const newPoint = {
-                lat: latitude,
-                lon: longitude,
-              }
-
-              trackRef.current = [
-                ...trackRef.current,
-                newPoint,
-              ]
-
-              setTrack([
-                ...trackRef.current,
-              ])
-            }
-
-            /*
-               Höhenmeter
-            */
-
-            if (
-              altitude !== null &&
-              altitude !== undefined &&
-              previous.altitude !== null &&
-              previous.altitude !== undefined
-            ) {
-              const difference =
-                altitude -
-                previous.altitude
-
-              if (
-                difference > 1 &&
-                difference < 100
-              ) {
-                setElevation(
-                  (value) =>
-                    value + difference
-                )
-              }
-            }
-
-            lastPositionRef.current =
-              newPosition
-          }
-        },
-
-        (gpsError) => {
-          console.error(
-            'GPS Fehler:',
-            gpsError
+        /*
+           Entfernung zum letzten Punkt
+        */
+        const meters =
+          calculateDistance(
+            previous.lat,
+            previous.lon,
+            latitude,
+            longitude
           )
 
-          if (gpsError.code === 1) {
-            setError(
-              'GPS-Berechtigung wurde verweigert. Bitte Standortzugriff erlauben.'
-            )
-          } else if (gpsError.code === 2) {
-            setError(
-              'GPS-Position konnte nicht ermittelt werden.'
-            )
-          } else if (gpsError.code === 3) {
-            setError(
-              'GPS-Anfrage hat zu lange gedauert.'
-            )
-          } else {
-            setError(
-              'GPS konnte nicht ermittelt werden.'
+        /*
+           Kleine GPS-Sprünge ignorieren.
+           Sehr große Sprünge ebenfalls.
+        */
+        if (
+          meters > 2 &&
+          meters < 200
+        ) {
+          setDistance(
+            (value) =>
+              value + meters
+          )
+
+          const newPoint = {
+            lat: latitude,
+            lon: longitude,
+          }
+
+          trackRef.current = [
+            ...trackRef.current,
+            newPoint,
+          ]
+
+          setTrack([
+            ...trackRef.current,
+          ])
+        }
+
+        /*
+           Höhenmeter berechnen
+        */
+        if (
+          altitude !== null &&
+          altitude !== undefined &&
+          previous.altitude !== null &&
+          previous.altitude !== undefined
+        ) {
+          const difference =
+            altitude -
+            previous.altitude
+
+          /*
+             Nur realistische positive
+             Höhenänderungen berücksichtigen
+          */
+          if (
+            difference > 1 &&
+            difference < 100
+          ) {
+            setElevation(
+              (value) =>
+                value + difference
             )
           }
-        },
-
-        {
-          enableHighAccuracy: true,
-          maximumAge: 2000,
-          timeout: 15000,
         }
-      )
-  }
+
+        /*
+           Letzte Position aktualisieren
+        */
+        lastPositionRef.current =
+          newPosition
+      },
+
+      (gpsError) => {
+        console.error(
+          'GPS Fehler:',
+          gpsError
+        )
+
+        if (gpsError.code === 1) {
+          setError(
+            'GPS-Berechtigung wurde verweigert. Bitte Standortzugriff erlauben.'
+          )
+        } else if (gpsError.code === 2) {
+          setError(
+            'GPS-Position konnte nicht ermittelt werden.'
+          )
+        } else if (gpsError.code === 3) {
+          setError(
+            'GPS-Anfrage hat zu lange gedauert.'
+          )
+        } else {
+          setError(
+            'GPS konnte nicht ermittelt werden.'
+          )
+        }
+      },
+
+      {
+        enableHighAccuracy: true,
+        maximumAge: 2000,
+        timeout: 15000,
+      }
+    )
+}
 
   /* =====================================================
      START
   ===================================================== */
 
-  const startRecording = () => {
-    setRecording(true)
-    setPaused(false)
+ const startRecording = () => {
+  setRecording(true)
+  setPaused(false)
 
-    setSeconds(0)
-    setDistance(0)
-    setElevation(0)
+  recordingRef.current = true
+  pausedRef.current = false
 
-    setCurrentPosition(null)
-    setTrack([])
+  setSeconds(0)
+  setDistance(0)
+  setElevation(0)
 
-    setError('')
-    setFollowPosition(true)
+  setCurrentPosition(null)
+  setTrack([])
 
-    lastPositionRef.current = null
-    trackRef.current = []
+  setError('')
+  setFollowPosition(true)
 
-    startGPS()
-  }
+  lastPositionRef.current = null
+  trackRef.current = []
+
+  startGPS()
+}
 
   /* =====================================================
      PAUSE
   ===================================================== */
 
-  const togglePause = () => {
-    setPaused((value) => !value)
-  }
+ const togglePause = () => {
+  const newPausedState = !pausedRef.current
+
+  pausedRef.current = newPausedState
+  setPaused(newPausedState)
+}
 
   /* =====================================================
      BEENDEN
   ===================================================== */
 
-const finishRecording = () => {
+const finishRecording = async () => {
+  recordingRef.current = false
+pausedRef.current = false
   if (watchIdRef.current !== null) {
     navigator.geolocation.clearWatch(
       watchIdRef.current
@@ -370,19 +421,45 @@ const finishRecording = () => {
      Tour speichern
   */
 
-  const existing =
-    JSON.parse(
-      localStorage.getItem(
-        'mtb_tours'
-      ) || '[]'
-    )
+  const {
+  data: { user },
+  error: userError,
+} = await supabase.auth.getUser()
 
-  existing.unshift(tour)
+if (userError) {
+  throw userError
+}
 
-  localStorage.setItem(
-    'mtb_tours',
-    JSON.stringify(existing)
+if (!user) {
+  setError('Du bist nicht eingeloggt.')
+  return
+}
+
+const { error: saveError } = await supabase
+  .from('tours')
+  .insert({
+    user_id: user.id,
+    title:
+      tourName.trim() ||
+      'Meine MTB Tour',
+    started_at: tour.date,
+    duration_s: tour.duration,
+    distance_m: tour.distance * 1000,
+    elevation_gain_m: tour.elevation,
+  })
+
+if (saveError) {
+  console.error(
+    'Tour konnte nicht gespeichert werden:',
+    saveError
   )
+
+  setError(
+    'Tour konnte nicht gespeichert werden.'
+  )
+
+  return
+}
 
   /*
      Dialog schließen

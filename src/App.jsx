@@ -3010,17 +3010,16 @@ function MapPage() {
   const userMarkerRef = useRef(null)
   const parkMarkersRef = useRef([])
 
-  const [position, setPosition] =
-    useState(null)
+  const [position, setPosition] = useState(null)
+const [locationError, setLocationError] = useState(false)
+const [search, setSearch] = useState('')
+const [selectedPark, setSelectedPark] = useState(null)
 
-  const [locationError, setLocationError] =
-    useState(false)
+const [isRecording, setIsRecording] = useState(false)
+const [tourDistance, setTourDistance] = useState(0)
+const [tourElevation, setTourElevation] = useState(0)
 
-  const [search, setSearch] =
-    useState('')
-
-  const [selectedPark, setSelectedPark] =
-    useState(null)
+const trackRef = useRef([])
 
   /* ---------------------------------------------
      KARTE ERSTELLEN
@@ -3100,35 +3099,71 @@ function MapPage() {
   }
 }, [])
 
-  /* ---------------------------------------------
-     STANDORT
-  --------------------------------------------- */
+ /* ---------------------------------------------
+   GPS TRACKING
+--------------------------------------------- */
 
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocationError(true)
-      return
+useEffect(() => {
+  if (!navigator.geolocation) {
+    setLocationError(true)
+    return
+  }
+
+  const watchId = navigator.geolocation.watchPosition(
+    (location) => {
+      const coords = [
+        location.coords.longitude,
+        location.coords.latitude,
+      ]
+
+      setPosition(coords)
+
+     // Nur während einer aktiven Tour aufzeichnen
+if (isRecording) {
+  const previousPoint =
+    trackRef.current[trackRef.current.length - 1]
+
+  const currentPoint = {
+    coords,
+    altitude: location.coords.altitude,
+    accuracy: location.coords.accuracy,
+    timestamp: location.timestamp,
+  }
+
+  trackRef.current.push(currentPoint)
+
+  // Höhenmeter berechnen
+  if (
+    previousPoint &&
+    previousPoint.altitude !== null &&
+    currentPoint.altitude !== null
+  ) {
+    const elevationDifference =
+      currentPoint.altitude -
+      previousPoint.altitude
+
+    if (elevationDifference > 0) {
+      setTourElevation((value) =>
+        value + elevationDifference
+      )
     }
+  }
+}
+    },
+    () => {
+      setLocationError(true)
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 5000,
+    }
+  )
 
-    navigator.geolocation.getCurrentPosition(
-      (location) => {
-        const coords = [
-          location.coords.longitude,
-          location.coords.latitude,
-        ]
-
-        setPosition(coords)
-      },
-      () => {
-        setLocationError(true)
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000,
-      }
-    )
-  }, [])
+  return () => {
+    navigator.geolocation.clearWatch(watchId)
+  }
+}, [])
 
   /* ---------------------------------------------
      PARK-MARKER
@@ -3508,6 +3543,25 @@ function MapPage() {
       </p>
     </section>
   )
+}
+
+/* ---------------------------------------------
+   TOUR AUFZEICHNUNG
+--------------------------------------------- */
+
+const startTour = () => {
+  trackRef.current = []
+  setTourDistance(0)
+  setTourElevation(0)
+  setIsRecording(true)
+}
+
+const stopTour = () => {
+  setIsRecording(false)
+
+  console.log('Tour beendet')
+  console.log('GPS Punkte:', trackRef.current)
+  console.log('Höhenmeter:', tourElevation)
 }
 
 /* =====================================================
