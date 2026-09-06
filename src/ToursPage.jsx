@@ -58,34 +58,64 @@ function formatDate(dateString) {
    KARTE AUF STRECKE ZENTRIEREN
 ===================================================== */
 
-function FitTrack({ track }) {
+function MapFix({ track }) {
   const map = useMap()
 
   useEffect(() => {
-    if (!track || track.length === 0) return
+    const timer = setTimeout(() => {
+      map.invalidateSize()
 
-    const validPoints = track.filter(
-      (point) =>
-        point &&
-        typeof point.lat === 'number' &&
-        typeof point.lon === 'number'
-    )
+      if (!track || track.length === 0) return
 
-    if (validPoints.length === 0) return
+      const validPoints = track.filter(
+        (point) =>
+          point &&
+          Number.isFinite(point.lat) &&
+          Number.isFinite(point.lon)
+      )
 
-    const bounds = validPoints.map((point) => [
-      point.lat,
-      point.lon,
-    ])
+      if (validPoints.length === 0) return
 
-    map.fitBounds(bounds, {
-      padding: [40, 40],
-    })
+      const bounds = validPoints.map((point) => [
+        point.lat,
+        point.lon,
+      ])
+
+      map.fitBounds(bounds, {
+        padding: [50, 50],
+      })
+    }, 150)
+
+    return () => clearTimeout(timer)
   }, [map, track])
 
   return null
 }
 
+function MapFix({ track }) {
+  const map = useMap()
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize()
+
+      if (track && track.length > 0) {
+        const bounds = track.map((point) => [
+          point.lat,
+          point.lon,
+        ])
+
+        map.fitBounds(bounds, {
+          padding: [50, 50],
+        })
+      }
+    }, 150)
+
+    return () => clearTimeout(timer)
+  }, [map, track])
+
+  return null
+}
 
 /* =====================================================
    TOUR DETAIL
@@ -302,9 +332,15 @@ function TourDetail({ tour, onBack }) {
       >
 
         <MapContainer
+          key={String(tour.id)}
           center={mapCenter}
           zoom={15}
           scrollWheelZoom={true}
+          style={{
+            width: '100%',
+            height: '100%',
+            minHeight: '550px',
+          }}
           dragging={true}
           doubleClickZoom={true}
           touchZoom={true}
@@ -325,12 +361,8 @@ function TourDetail({ tour, onBack }) {
               STRECKE AUTOMATISCH ANPASSEN
           ========================================= */}
 
-          {route.length > 0 && (
-            <FitTrack
-              track={route}
-            />
-          )}
-
+          
+            <MapFix track={route} />
 
           {/* =========================================
               GEFAHRENE STRECKE
