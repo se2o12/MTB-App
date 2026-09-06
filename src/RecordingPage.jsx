@@ -418,27 +418,30 @@ const finishRecording = async () => {
   ===================================================== */
 
   const tour = {
-    id: Date.now(),
+  id: Date.now(),
 
-    name:
-      tourName.trim() ||
-      'Meine MTB Tour',
+  name:
+    tourName.trim() ||
+    'Meine MTB Tour',
 
-    date:
-      new Date().toISOString(),
+  date:
+    new Date().toISOString(),
 
-    duration:
-      seconds,
+  duration:
+    seconds,
 
-    distance:
-      distance / 1000,
+  distance:
+    distance / 1000,
 
-    elevation:
-      Math.round(elevation),
+  elevation:
+    Math.round(elevation),
 
-    track:
-      savedTrack,
-  }
+  // Die komplette GPS-Strecke
+  track: savedTrack,
+
+  // Kompatibilität mit älteren Touren
+  route: savedTrack,
+}
 
   /* =====================================================
      SOFORT LOKAL SPEICHERN

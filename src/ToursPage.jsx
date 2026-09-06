@@ -94,72 +94,91 @@ function FitTrack({ track }) {
 function TourDetail({ tour, onBack }) {
 
   /* =====================================================
-     GPS-STRECKE LADEN
+     GPS-DATEN AUS DER TOUR HOLEN
   ===================================================== */
 
-  let route = []
+  let rawRoute = []
 
+  // Neue Touren
   if (Array.isArray(tour.track)) {
-    route = tour.track
-  } else if (typeof tour.track === 'string') {
-    try {
-      const parsedTrack = JSON.parse(tour.track)
+    rawRoute = tour.track
+  }
 
-      if (Array.isArray(parsedTrack)) {
-        route = parsedTrack
+  // Falls track als JSON gespeichert wurde
+  else if (typeof tour.track === 'string') {
+    try {
+      const parsed = JSON.parse(tour.track)
+
+      if (Array.isArray(parsed)) {
+        rawRoute = parsed
       }
     } catch (error) {
       console.error(
-        'Track konnte nicht gelesen werden:',
+        'track konnte nicht gelesen werden:',
         error
       )
     }
   }
 
-  /* Alte Touren unterstützen */
+  // Alte Touren
   if (
-    route.length === 0 &&
+    rawRoute.length === 0 &&
     Array.isArray(tour.route)
   ) {
-    route = tour.route
+    rawRoute = tour.route
   }
 
   /* =====================================================
-     GPS-PUNKTE PRÜFEN
+     GPS-PUNKTE NORMALISIEREN
   ===================================================== */
 
-  const validRoute = route
-    .map((point) => ({
-      lat: Number(point?.lat),
-      lon: Number(
-        point?.lon ?? point?.lng
-      ),
-    }))
-    .filter(
-      (point) =>
-        Number.isFinite(point.lat) &&
-        Number.isFinite(point.lon)
-    )
+  const route = rawRoute
+    .map((point) => {
+
+      if (!point) {
+        return null
+      }
+
+      const lat = Number(point.lat)
+
+      const lon = Number(
+        point.lon ??
+        point.lng
+      )
+
+      if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lon)
+      ) {
+        return null
+      }
+
+      return {
+        lat,
+        lon,
+      }
+    })
+    .filter(Boolean)
 
   console.log(
-    'Tour geöffnet:',
+    'TOUR:',
     tour.name || tour.title
   )
 
   console.log(
-    'Gespeicherte GPS-Punkte:',
-    validRoute.length
+    'GPS-PUNKTE:',
+    route.length
   )
 
   /* =====================================================
-     STARTPUNKT
+     KARTE
   ===================================================== */
 
-  const firstPoint =
-    validRoute.length > 0
+  const mapCenter =
+    route.length > 0
       ? [
-          validRoute[0].lat,
-          validRoute[0].lon,
+          route[0].lat,
+          route[0].lon,
         ]
       : [49.79, 9.95]
 
@@ -206,7 +225,7 @@ function TourDetail({ tour, onBack }) {
 
 
       {/* =================================================
-          TOUR INFOS
+          STATS
       ================================================= */}
 
       <div className="tour-detail-stats">
@@ -269,80 +288,85 @@ function TourDetail({ tour, onBack }) {
 
 
       {/* =================================================
-          GPS-KARTE
+          KOMOOT-STYLE TOUR MAP
       ================================================= */}
 
       <div
         className="tour-detail-map"
         style={{
           width: '100%',
-          height: '500px',
-          minHeight: '500px',
+          height: '550px',
+          minHeight: '550px',
           position: 'relative',
-          overflow: 'hidden',
         }}
       >
 
-        {validRoute.length > 0 ? (
+        <MapContainer
+          center={mapCenter}
+          zoom={15}
+          scrollWheelZoom={true}
+          dragging={true}
+          doubleClickZoom={true}
+          touchZoom={true}
+          zoomControl={true}
+          style={{
+            width: '100%',
+            height: '100%',
+          }}
+        >
 
-          <MapContainer
-            center={firstPoint}
-            zoom={15}
-            scrollWheelZoom={true}
-            style={{
-              width: '100%',
-              height: '100%',
-            }}
-          >
-
-            <TileLayer
-              attribution="&copy; OpenStreetMap contributors"
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
 
-            {/* =========================================
-                AUTOMATISCH AUF STRECKE ZOOMEN
-            ========================================= */}
+          {/* =========================================
+              STRECKE AUTOMATISCH ANPASSEN
+          ========================================= */}
 
+          {route.length > 0 && (
             <FitTrack
-              track={validRoute}
+              track={route}
+            />
+          )}
+
+
+          {/* =========================================
+              GEFAHRENE STRECKE
+          ========================================= */}
+
+          {route.length > 1 && (
+
+            <Polyline
+              positions={route.map(
+                (point) => [
+                  point.lat,
+                  point.lon,
+                ]
+              )}
+              pathOptions={{
+                color: '#a5f51a',
+                weight: 6,
+                opacity: 1,
+              }}
             />
 
-
-            {/* =========================================
-                GEFAHRENE STRECKE
-            ========================================= */}
-
-            {validRoute.length > 1 && (
-
-              <Polyline
-                positions={validRoute.map(
-                  (point) => [
-                    point.lat,
-                    point.lon,
-                  ]
-                )}
-                pathOptions={{
-                  color: '#a5f51a',
-                  weight: 6,
-                  opacity: 0.95,
-                }}
-              />
-
-            )}
+          )}
 
 
-            {/* =========================================
-                START
-            ========================================= */}
+          {/* =========================================
+              START
+          ========================================= */}
+
+          {route.length > 0 && (
 
             <CircleMarker
               center={[
-                validRoute[0].lat,
-                validRoute[0].lon,
+                route[0].lat,
+                route[0].lon,
               ]}
-              radius={8}
+              radius={9}
               pathOptions={{
                 color: '#ffffff',
                 fillColor: '#a5f51a',
@@ -351,39 +375,57 @@ function TourDetail({ tour, onBack }) {
               }}
             />
 
+          )}
 
-            {/* =========================================
-                ZIEL
-            ========================================= */}
 
-            {validRoute.length > 1 && (
+          {/* =========================================
+              ZIEL
+          ========================================= */}
 
-              <CircleMarker
-                center={[
-                  validRoute[
-                    validRoute.length - 1
-                  ].lat,
+          {route.length > 1 && (
 
-                  validRoute[
-                    validRoute.length - 1
-                  ].lon,
-                ]}
-                radius={8}
-                pathOptions={{
-                  color: '#ffffff',
-                  fillColor: '#ff4d4d',
-                  fillOpacity: 1,
-                  weight: 3,
-                }}
-              />
+            <CircleMarker
+              center={[
+                route[
+                  route.length - 1
+                ].lat,
 
-            )}
+                route[
+                  route.length - 1
+                ].lon,
+              ]}
+              radius={9}
+              pathOptions={{
+                color: '#ffffff',
+                fillColor: '#ff4d4d',
+                fillOpacity: 1,
+                weight: 3,
+              }}
+            />
 
-          </MapContainer>
+          )}
 
-        ) : (
+        </MapContainer>
 
-          <div className="tour-no-track">
+
+        {/* =============================================
+            INFO WENN KEINE STRECKE
+        ============================================= */}
+
+        {route.length === 0 && (
+
+          <div
+            className="tour-no-track"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+            }}
+          >
 
             <div className="tour-no-track-icon">
               🗺️
@@ -394,17 +436,17 @@ function TourDetail({ tour, onBack }) {
             </strong>
 
             <span>
-              Diese Tour enthält aktuell keine
+              Diese Tour enthält keine
               gespeicherten GPS-Punkte.
             </span>
 
             <small
               style={{
-                marginTop: '10px',
+                marginTop: '12px',
                 opacity: 0.6,
               }}
             >
-              GPS-Punkte: 0
+              Gespeicherte Punkte: 0
             </small>
 
           </div>
@@ -412,6 +454,25 @@ function TourDetail({ tour, onBack }) {
         )}
 
       </div>
+
+
+      {/* =================================================
+          GPS INFO
+      ================================================= */}
+
+      {route.length > 0 && (
+
+        <div
+          style={{
+            marginTop: '12px',
+            opacity: 0.55,
+            fontSize: '12px',
+          }}
+        >
+          🛰️ {route.length} GPS-Punkte aufgezeichnet
+        </div>
+
+      )}
 
     </div>
   )
