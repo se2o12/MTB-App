@@ -395,6 +395,7 @@ pausedRef.current = false
   /*
      Tourdaten vorbereiten
   */
+  console.log('TRACK VOR DEM SPEICHERN:', trackRef.current)
 
   const tour = {
     id: Date.now(),
