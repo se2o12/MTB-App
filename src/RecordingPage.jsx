@@ -473,6 +473,31 @@ if (saveError) {
   return
 }
 
+/* =====================================================
+   TOUR AUCH LOKAL SPEICHERN
+===================================================== */
+
+try {
+  const existingTours = JSON.parse(
+    localStorage.getItem('mtb_tours') || '[]'
+  )
+
+  existingTours.unshift(tour)
+
+  localStorage.setItem(
+    'mtb_tours',
+    JSON.stringify(existingTours)
+  )
+
+  console.log('Tour lokal gespeichert:', tour)
+
+} catch (storageError) {
+  console.error(
+    'Tour konnte nicht lokal gespeichert werden:',
+    storageError
+  )
+}
+
   /*
      Dialog schließen
   */

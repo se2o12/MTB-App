@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './supabaseClient'
 
 import {
   MapContainer,
@@ -95,14 +94,19 @@ function FitTrack({ track }) {
 function TourDetail({ tour, onBack }) {
 
   /*
-    WICHTIG:
-    Supabase verwendet "route".
-    Nicht "track".
+     Neue localStorage-Touren benutzen "track".
+
+     Ältere Supabase-Touren können "route"
+     benutzen.
+
+     Deshalb unterstützen wir beides.
   */
 
-  const route = Array.isArray(tour.route)
-    ? tour.route
-    : []
+  const route = Array.isArray(tour.track)
+    ? tour.track
+    : Array.isArray(tour.route)
+      ? tour.route
+      : []
 
   const validRoute = route.filter(
     (point) =>
@@ -143,12 +147,16 @@ function TourDetail({ tour, onBack }) {
           </span>
 
           <h1>
-            {tour.title || 'Meine MTB Tour'}
+            {tour.name ||
+              tour.title ||
+              'Meine MTB Tour'}
           </h1>
 
           <span className="tour-detail-date">
             {formatDate(
-              tour.started_at || tour.created_at
+              tour.date ||
+              tour.started_at ||
+              tour.created_at
             )}
           </span>
 
@@ -170,7 +178,10 @@ function TourDetail({ tour, onBack }) {
           </span>
 
           <strong>
-            {formatDuration(tour.duration_s)}
+            {formatDuration(
+              tour.duration_s ??
+              tour.duration
+            )}
           </strong>
 
         </div>
@@ -183,7 +194,11 @@ function TourDetail({ tour, onBack }) {
           </span>
 
           <strong>
-            {formatDistance(tour.distance_m)}
+            {tour.distance_m !== undefined
+              ? formatDistance(tour.distance_m)
+              : `${(tour.distance || 0)
+                  .toFixed(2)
+                  .replace('.', ',')} km`}
           </strong>
 
         </div>
@@ -197,7 +212,9 @@ function TourDetail({ tour, onBack }) {
 
           <strong>
             {Math.round(
-              tour.elevation_gain_m || 0
+              tour.elevation_gain_m ??
+              tour.elevation ??
+              0
             )}{' '}
             hm
           </strong>
@@ -236,7 +253,9 @@ function TourDetail({ tour, onBack }) {
             />
 
 
-            {/* ROUTE */}
+            {/* =========================================
+                GPS-LINIE
+            ========================================= */}
 
             <Polyline
               positions={validRoute.map(
@@ -253,7 +272,9 @@ function TourDetail({ tour, onBack }) {
             />
 
 
-            {/* START */}
+            {/* =========================================
+                START
+            ========================================= */}
 
             <CircleMarker
               center={[
@@ -270,7 +291,9 @@ function TourDetail({ tour, onBack }) {
             />
 
 
-            {/* ENDE */}
+            {/* =========================================
+                ENDE
+            ========================================= */}
 
             {validRoute.length > 1 && (
 
@@ -344,59 +367,30 @@ export default function ToursPage() {
 
 
   /* =================================================
-     TOUREN LADEN
+     TOUREN AUS LOCALSTORAGE LADEN
   ================================================= */
 
-  const loadTours = async () => {
+  const loadTours = () => {
 
     setLoading(true)
     setError('')
 
     try {
 
-      /*
-        WICHTIG:
-
-        Wir fragen NICHT mehr mit
-        .eq('user_id', user.id)
-
-        ab.
-
-        Die Supabase-RLS-Policy
-
-        auth.uid() = user_id
-
-        sorgt bereits dafür, dass nur die
-        Touren des eingeloggten Users
-        zurückgegeben werden.
-      */
-
-      const {
-        data,
-        error: toursError,
-      } = await supabase
-        .from('tours')
-        .select('*')
-        .order(
-          'created_at',
-          {
-            ascending: false,
-          }
-        )
-
-
-      if (toursError) {
-        throw toursError
-      }
-
-
-      console.log(
-        'Gespeicherte Touren:',
-        data
+      const savedTours = JSON.parse(
+        localStorage.getItem('mtb_tours') || '[]'
       )
 
+      console.log(
+        'Touren aus localStorage:',
+        savedTours
+      )
 
-      setTours(data || [])
+      setTours(
+        Array.isArray(savedTours)
+          ? savedTours
+          : []
+      )
 
     } catch (err) {
 
@@ -405,10 +399,10 @@ export default function ToursPage() {
         err
       )
 
+      setTours([])
+
       setError(
-        `Touren konnten nicht geladen werden: ${
-          err.message
-        }`
+        'Touren konnten nicht geladen werden.'
       )
 
     } finally {
@@ -575,13 +569,15 @@ export default function ToursPage() {
 
 
               <h3>
-                {tour.title ||
+                {tour.name ||
+                  tour.title ||
                   'Meine MTB Tour'}
               </h3>
 
 
               <span className="saved-tour-date">
                 {formatDate(
+                  tour.date ||
                   tour.started_at ||
                   tour.created_at
                 )}
@@ -593,23 +589,31 @@ export default function ToursPage() {
                 <span>
                   ⏱️{' '}
                   {formatDuration(
-                    tour.duration_s
+                    tour.duration_s ??
+                    tour.duration
                   )}
                 </span>
 
 
                 <span>
                   📍{' '}
-                  {formatDistance(
-                    tour.distance_m
-                  )}
+
+                  {tour.distance_m !== undefined
+                    ? formatDistance(
+                        tour.distance_m
+                      )
+                    : `${(tour.distance || 0)
+                        .toFixed(2)
+                        .replace('.', ',')} km`}
                 </span>
 
 
                 <span>
                   ⛰️{' '}
+
                   {Math.round(
-                    tour.elevation_gain_m ||
+                    tour.elevation_gain_m ??
+                    tour.elevation ??
                     0
                   )}{' '}
                   hm
