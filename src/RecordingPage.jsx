@@ -378,7 +378,12 @@ const startGPS = () => {
 
 const finishRecording = async () => {
   recordingRef.current = false
-pausedRef.current = false
+  pausedRef.current = false
+
+  /* =====================================================
+     GPS + TIMER STOPPEN
+  ===================================================== */
+
   if (watchIdRef.current !== null) {
     navigator.geolocation.clearWatch(
       watchIdRef.current
@@ -392,10 +397,24 @@ pausedRef.current = false
     timerRef.current = null
   }
 
-  /*
-     Tourdaten vorbereiten
-  */
-  console.log('TRACK VOR DEM SPEICHERN:', trackRef.current)
+  /* =====================================================
+     TRACK SICHER KOPIEREN
+  ===================================================== */
+
+  // Wichtig: Kopie erstellen, damit der gespeicherte
+  // Track nicht später durch React/Refs verändert wird.
+  const savedTrack = Array.isArray(trackRef.current)
+    ? [...trackRef.current]
+    : []
+
+  console.log(
+    'GPS-Punkte beim Speichern:',
+    savedTrack.length
+  )
+
+  /* =====================================================
+     TOURDATEN ERSTELLEN
+  ===================================================== */
 
   const tour = {
     id: Date.now(),
@@ -407,7 +426,8 @@ pausedRef.current = false
     date:
       new Date().toISOString(),
 
-    duration: seconds,
+    duration:
+      seconds,
 
     distance:
       distance / 1000,
@@ -416,92 +436,122 @@ pausedRef.current = false
       Math.round(elevation),
 
     track:
-      trackRef.current,
+      savedTrack,
   }
 
-  /*
-     Tour speichern
-  */
+  /* =====================================================
+     LOCALSTORAGE SPEICHERN
+  ===================================================== */
 
-  const {
-  data: { user },
-  error: userError,
-} = await supabase.auth.getUser()
+  try {
+    const existingTours = JSON.parse(
+      localStorage.getItem('mtb_tours') || '[]'
+    )
 
-if (userError) {
-  throw userError
-}
+    const updatedTours = [
+      tour,
+      ...(
+        Array.isArray(existingTours)
+          ? existingTours
+          : []
+      ),
+    ]
 
-if (!user) {
-  setError('Du bist nicht eingeloggt.')
-  return
-}
+    localStorage.setItem(
+      'mtb_tours',
+      JSON.stringify(updatedTours)
+    )
 
-const { error: saveError } = await supabase
-  .from('tours')
-  .insert({
-    user_id: user.id,
+    console.log(
+      'Tour erfolgreich lokal gespeichert:',
+      tour
+    )
 
-    title:
-      tourName.trim() ||
-      'Meine MTB Tour',
+  } catch (storageError) {
 
-    started_at:
-      tour.date,
+    console.error(
+      'Tour konnte nicht lokal gespeichert werden:',
+      storageError
+    )
 
-    duration_s:
-      tour.duration,
+    setError(
+      'Tour konnte nicht auf dem Gerät gespeichert werden.'
+    )
 
-    distance_m: Math.round(tour.distance * 1000),
+    return
+  }
 
-    elevation_gain_m:
-      tour.elevation,
+  /* =====================================================
+     SUPABASE ALS BACKUP SPEICHERN
+  ===================================================== */
 
-    track:
-      trackRef.current,
-  })
+  try {
 
-if (saveError) {
-  console.error(
-    'Tour konnte nicht gespeichert werden:',
-    saveError
-  )
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
 
-  setError(
-    `Speichern fehlgeschlagen: ${saveError.message}`
-  )
+    if (userError) {
+      console.error(
+        'Benutzer konnte nicht geladen werden:',
+        userError
+      )
+    }
 
-  return
-}
+    if (user) {
 
-/* =====================================================
-   TOUR AUCH LOKAL SPEICHERN
-===================================================== */
+      const { error: saveError } =
+        await supabase
+          .from('tours')
+          .insert({
+            user_id:
+              user.id,
 
-try {
-  const existingTours = JSON.parse(
-    localStorage.getItem('mtb_tours') || '[]'
-  )
+            title:
+              tour.name,
 
-  existingTours.unshift(tour)
+            started_at:
+              tour.date,
 
-  localStorage.setItem(
-    'mtb_tours',
-    JSON.stringify(existingTours)
-  )
+            duration_s:
+              tour.duration,
 
-  console.log('Tour lokal gespeichert:', tour)
+            distance_m:
+              Math.round(
+                tour.distance * 1000
+              ),
 
-} catch (storageError) {
-  console.error(
-    'Tour konnte nicht lokal gespeichert werden:',
-    storageError
-  )
-}
+            elevation_gain_m:
+              tour.elevation,
 
-  /*
-     Dialog schließen
-  */
+            track:
+              savedTrack,
+          })
+
+      if (saveError) {
+        console.error(
+          'Supabase-Speicherung fehlgeschlagen:',
+          saveError
+        )
+      }
+
+    }
+
+  } catch (supabaseError) {
+
+    console.error(
+      'Supabase-Fehler:',
+      supabaseError
+    )
+
+    // Kein Abbruch!
+    // Die lokale Tour wurde bereits gespeichert.
+  }
+
+  /* =====================================================
+     DIALOG + AUFNAHME ZURÜCKSETZEN
+  ===================================================== */
 
   setShowSaveDialog(false)
   setTourName('')
@@ -509,9 +559,9 @@ try {
   setRecording(false)
   setPaused(false)
 
-  /*
-     Zur Touren-Seite
-  */
+  /* =====================================================
+     ZUR TOUREN-SEITE
+  ===================================================== */
 
   if (onFinish) {
     onFinish(tour)
