@@ -361,7 +361,10 @@ export default function ToursPage() {
       }
 
 
-      setTours(data || [])
+      console.log('TOUREN AUS SUPABASE:', data)
+console.log('FEHLER AUS SUPABASE:', toursError)
+
+setTours(data || [])
 
     } catch (err) {
 
