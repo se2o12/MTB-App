@@ -451,8 +451,7 @@ const { error: saveError } = await supabase
     duration_s:
       tour.duration,
 
-    distance_m:
-      tour.distance * 1000,
+    distance_m: Math.round(tour.distance * 1000),
 
     elevation_gain_m:
       tour.elevation,
