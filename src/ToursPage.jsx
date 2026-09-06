@@ -93,27 +93,67 @@ function FitTrack({ track }) {
 
 function TourDetail({ tour, onBack }) {
 
-  /*
-     Neue localStorage-Touren benutzen "track".
+  /* =====================================================
+     GPS-STRECKE LADEN
+  ===================================================== */
 
-     Ältere Supabase-Touren können "route"
-     benutzen.
+  let route = []
 
-     Deshalb unterstützen wir beides.
-  */
+  if (Array.isArray(tour.track)) {
+    route = tour.track
+  } else if (typeof tour.track === 'string') {
+    try {
+      const parsedTrack = JSON.parse(tour.track)
 
-  const route = Array.isArray(tour.track)
-    ? tour.track
-    : Array.isArray(tour.route)
-      ? tour.route
-      : []
+      if (Array.isArray(parsedTrack)) {
+        route = parsedTrack
+      }
+    } catch (error) {
+      console.error(
+        'Track konnte nicht gelesen werden:',
+        error
+      )
+    }
+  }
 
-  const validRoute = route.filter(
-    (point) =>
-      point &&
-      typeof point.lat === 'number' &&
-      typeof point.lon === 'number'
+  /* Alte Touren unterstützen */
+  if (
+    route.length === 0 &&
+    Array.isArray(tour.route)
+  ) {
+    route = tour.route
+  }
+
+  /* =====================================================
+     GPS-PUNKTE PRÜFEN
+  ===================================================== */
+
+  const validRoute = route
+    .map((point) => ({
+      lat: Number(point?.lat),
+      lon: Number(
+        point?.lon ?? point?.lng
+      ),
+    }))
+    .filter(
+      (point) =>
+        Number.isFinite(point.lat) &&
+        Number.isFinite(point.lon)
+    )
+
+  console.log(
+    'Tour geöffnet:',
+    tour.name || tour.title
   )
+
+  console.log(
+    'Gespeicherte GPS-Punkte:',
+    validRoute.length
+  )
+
+  /* =====================================================
+     STARTPUNKT
+  ===================================================== */
 
   const firstPoint =
     validRoute.length > 0
@@ -121,7 +161,7 @@ function TourDetail({ tour, onBack }) {
           validRoute[0].lat,
           validRoute[0].lon,
         ]
-      : [47.0, 11.5]
+      : [49.79, 9.95]
 
 
   return (
@@ -195,8 +235,12 @@ function TourDetail({ tour, onBack }) {
 
           <strong>
             {tour.distance_m !== undefined
-              ? formatDistance(tour.distance_m)
-              : `${(tour.distance || 0)
+              ? formatDistance(
+                  tour.distance_m
+                )
+              : `${(
+                  tour.distance || 0
+                )
                   .toFixed(2)
                   .replace('.', ',')} km`}
           </strong>
@@ -225,16 +269,25 @@ function TourDetail({ tour, onBack }) {
 
 
       {/* =================================================
-          KARTE
+          GPS-KARTE
       ================================================= */}
 
-      <div className="tour-detail-map">
+      <div
+        className="tour-detail-map"
+        style={{
+          width: '100%',
+          height: '500px',
+          minHeight: '500px',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
 
         {validRoute.length > 0 ? (
 
           <MapContainer
             center={firstPoint}
-            zoom={14}
+            zoom={15}
             scrollWheelZoom={true}
             style={{
               width: '100%',
@@ -248,28 +301,36 @@ function TourDetail({ tour, onBack }) {
             />
 
 
+            {/* =========================================
+                AUTOMATISCH AUF STRECKE ZOOMEN
+            ========================================= */}
+
             <FitTrack
               track={validRoute}
             />
 
 
             {/* =========================================
-                GPS-LINIE
+                GEFAHRENE STRECKE
             ========================================= */}
 
-            <Polyline
-              positions={validRoute.map(
-                (point) => [
-                  point.lat,
-                  point.lon,
-                ]
-              )}
-              pathOptions={{
-                color: '#a5f51a',
-                weight: 5,
-                opacity: 0.9,
-              }}
-            />
+            {validRoute.length > 1 && (
+
+              <Polyline
+                positions={validRoute.map(
+                  (point) => [
+                    point.lat,
+                    point.lon,
+                  ]
+                )}
+                pathOptions={{
+                  color: '#a5f51a',
+                  weight: 6,
+                  opacity: 0.95,
+                }}
+              />
+
+            )}
 
 
             {/* =========================================
@@ -281,7 +342,7 @@ function TourDetail({ tour, onBack }) {
                 validRoute[0].lat,
                 validRoute[0].lon,
               ]}
-              radius={7}
+              radius={8}
               pathOptions={{
                 color: '#ffffff',
                 fillColor: '#a5f51a',
@@ -292,7 +353,7 @@ function TourDetail({ tour, onBack }) {
 
 
             {/* =========================================
-                ENDE
+                ZIEL
             ========================================= */}
 
             {validRoute.length > 1 && (
@@ -307,7 +368,7 @@ function TourDetail({ tour, onBack }) {
                     validRoute.length - 1
                   ].lon,
                 ]}
-                radius={7}
+                radius={8}
                 pathOptions={{
                   color: '#ffffff',
                   fillColor: '#ff4d4d',
@@ -333,9 +394,18 @@ function TourDetail({ tour, onBack }) {
             </strong>
 
             <span>
-              Für diese Tour wurde keine
-              GPS-Strecke gespeichert.
+              Diese Tour enthält aktuell keine
+              gespeicherten GPS-Punkte.
             </span>
+
+            <small
+              style={{
+                marginTop: '10px',
+                opacity: 0.6,
+              }}
+            >
+              GPS-Punkte: 0
+            </small>
 
           </div>
 
