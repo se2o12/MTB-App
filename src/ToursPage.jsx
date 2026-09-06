@@ -93,11 +93,18 @@ function FitTrack({ track }) {
 ===================================================== */
 
 function TourDetail({ tour, onBack }) {
-  const track = Array.isArray(tour.track)
-    ? tour.track
+
+  /*
+    WICHTIG:
+    Supabase verwendet "route".
+    Nicht "track".
+  */
+
+  const route = Array.isArray(tour.route)
+    ? tour.route
     : []
 
-  const validTrack = track.filter(
+  const validRoute = route.filter(
     (point) =>
       point &&
       typeof point.lat === 'number' &&
@@ -105,12 +112,13 @@ function TourDetail({ tour, onBack }) {
   )
 
   const firstPoint =
-    validTrack.length > 0
+    validRoute.length > 0
       ? [
-          validTrack[0].lat,
-          validTrack[0].lon,
+          validRoute[0].lat,
+          validRoute[0].lon,
         ]
       : [47.0, 11.5]
+
 
   return (
     <div className="tour-detail">
@@ -129,17 +137,21 @@ function TourDetail({ tour, onBack }) {
         </button>
 
         <div>
+
           <span className="small-title">
             TOUR
           </span>
 
-          <h1>{tour.title || 'Meine MTB Tour'}</h1>
+          <h1>
+            {tour.title || 'Meine MTB Tour'}
+          </h1>
 
           <span className="tour-detail-date">
             {formatDate(
               tour.started_at || tour.created_at
             )}
           </span>
+
         </div>
 
       </div>
@@ -152,27 +164,44 @@ function TourDetail({ tour, onBack }) {
       <div className="tour-detail-stats">
 
         <div className="tour-detail-stat">
-          <span>ZEIT</span>
+
+          <span>
+            ZEIT
+          </span>
+
           <strong>
             {formatDuration(tour.duration_s)}
           </strong>
+
         </div>
 
+
         <div className="tour-detail-stat">
-          <span>STRECKE</span>
+
+          <span>
+            STRECKE
+          </span>
+
           <strong>
             {formatDistance(tour.distance_m)}
           </strong>
+
         </div>
 
+
         <div className="tour-detail-stat">
-          <span>HÖHENMETER</span>
+
+          <span>
+            HÖHENMETER
+          </span>
+
           <strong>
             {Math.round(
               tour.elevation_gain_m || 0
             )}{' '}
             hm
           </strong>
+
         </div>
 
       </div>
@@ -184,7 +213,7 @@ function TourDetail({ tour, onBack }) {
 
       <div className="tour-detail-map">
 
-        {validTrack.length > 0 ? (
+        {validRoute.length > 0 ? (
 
           <MapContainer
             center={firstPoint}
@@ -197,16 +226,20 @@ function TourDetail({ tour, onBack }) {
           >
 
             <TileLayer
-              attribution='&copy; OpenStreetMap contributors'
+              attribution="&copy; OpenStreetMap contributors"
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
+
             <FitTrack
-              track={validTrack}
+              track={validRoute}
             />
 
+
+            {/* ROUTE */}
+
             <Polyline
-              positions={validTrack.map(
+              positions={validRoute.map(
                 (point) => [
                   point.lat,
                   point.lon,
@@ -219,12 +252,13 @@ function TourDetail({ tour, onBack }) {
               }}
             />
 
+
             {/* START */}
 
             <CircleMarker
               center={[
-                validTrack[0].lat,
-                validTrack[0].lon,
+                validRoute[0].lat,
+                validRoute[0].lon,
               ]}
               radius={7}
               pathOptions={{
@@ -235,16 +269,19 @@ function TourDetail({ tour, onBack }) {
               }}
             />
 
+
             {/* ENDE */}
 
-            {validTrack.length > 1 && (
+            {validRoute.length > 1 && (
+
               <CircleMarker
                 center={[
-                  validTrack[
-                    validTrack.length - 1
+                  validRoute[
+                    validRoute.length - 1
                   ].lat,
-                  validTrack[
-                    validTrack.length - 1
+
+                  validRoute[
+                    validRoute.length - 1
                   ].lon,
                 ]}
                 radius={7}
@@ -255,6 +292,7 @@ function TourDetail({ tour, onBack }) {
                   weight: 3,
                 }}
               />
+
             )}
 
           </MapContainer>
@@ -316,44 +354,35 @@ export default function ToursPage() {
 
     try {
 
-      const {
-        data: {
-          user,
-        },
-        error: userError,
-      } =
-        await supabase.auth.getUser()
+      /*
+        WICHTIG:
 
+        Wir fragen NICHT mehr mit
+        .eq('user_id', user.id)
 
-      if (userError) {
-        throw userError
-      }
+        ab.
 
+        Die Supabase-RLS-Policy
 
-      if (!user) {
-        setError(
-          'Du bist nicht eingeloggt.'
-        )
+        auth.uid() = user_id
 
-        setTours([])
-        return
-      }
-
+        sorgt bereits dafür, dass nur die
+        Touren des eingeloggten Users
+        zurückgegeben werden.
+      */
 
       const {
         data,
         error: toursError,
-      } =
-        await supabase
-          .from('tours')
-          .select('*')
-          .eq('user_id', user.id)
-          .order(
-            'created_at',
-            {
-              ascending: false,
-            }
-          )
+      } = await supabase
+        .from('tours')
+        .select('*')
+        .order(
+          'created_at',
+          {
+            ascending: false,
+          }
+        )
 
 
       if (toursError) {
@@ -361,10 +390,13 @@ export default function ToursPage() {
       }
 
 
-      console.log('TOUREN AUS SUPABASE:', data)
-console.log('FEHLER AUS SUPABASE:', toursError)
+      console.log(
+        'Gespeicherte Touren:',
+        data
+      )
 
-setTours(data || [])
+
+      setTours(data || [])
 
     } catch (err) {
 
@@ -384,6 +416,7 @@ setTours(data || [])
       setLoading(false)
 
     }
+
   }
 
 
@@ -425,9 +458,11 @@ setTours(data || [])
         title="Meine Touren"
         eyebrow="TOUREN"
       >
+
         <div className="tours-loading">
           Touren werden geladen...
         </div>
+
       </Page>
     )
 
@@ -538,10 +573,12 @@ setTours(data || [])
                 MTB TOUR
               </span>
 
+
               <h3>
                 {tour.title ||
                   'Meine MTB Tour'}
               </h3>
+
 
               <span className="saved-tour-date">
                 {formatDate(
@@ -560,12 +597,14 @@ setTours(data || [])
                   )}
                 </span>
 
+
                 <span>
                   📍{' '}
                   {formatDistance(
                     tour.distance_m
                   )}
                 </span>
+
 
                 <span>
                   ⛰️{' '}
