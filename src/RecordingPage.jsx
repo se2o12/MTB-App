@@ -209,17 +209,12 @@ const startGPS = () => {
             newPosition
 
           const firstPoint = {
-            lat: latitude,
-            lon: longitude,
-          }
+  lat: Number(latitude),
+  lon: Number(longitude),
+}
 
-          trackRef.current = [
-            firstPoint,
-          ]
-
-          setTrack([
-            firstPoint,
-          ])
+trackRef.current = [firstPoint]
+setTrack([firstPoint])
 
           return
         }
@@ -252,18 +247,13 @@ const startGPS = () => {
           )
 
           const newPoint = {
-            lat: latitude,
-            lon: longitude,
-          }
+  lat: Number(latitude),
+  lon: Number(longitude),
+}
 
-          trackRef.current = [
-            ...trackRef.current,
-            newPoint,
-          ]
+trackRef.current.push(newPoint)
 
-          setTrack([
-            ...trackRef.current,
-          ])
+setTrack([...trackRef.current])
         }
 
         /*
