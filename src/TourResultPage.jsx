@@ -9,24 +9,35 @@ function TourResultPage({
   const [showTotal, setShowTotal] = useState(false)
   const [progress, setProgress] = useState(0)
 
-  const distanceXP = Math.floor(
-    Number(tour?.distance) || 0
+  const distance = Number(tour?.distance) || 0
+
+let distanceXP = 0
+let remainingDistance = distance
+let tier = 1
+
+while (remainingDistance > 0) {
+  const kilometersInTier = Math.min(
+    5,
+    remainingDistance
   )
 
-  const elevationXP = Math.floor(
-    (Number(tour?.elevation) || 0) / 10
-  )
+  distanceXP += kilometersInTier * tier
 
-  const completionXP = 25
+  remainingDistance -= kilometersInTier
+  tier++
+}
 
-  const difficultyXP =
-    Number(tour?.difficultyXP) || 0
+const activeDurationMinutes = Math.floor(
+  (Number(tour?.activeDuration) || 0) / 60
+)
 
-  const totalXP =
-    distanceXP +
-    elevationXP +
-    difficultyXP +
-    completionXP
+const durationXP = Math.floor(
+  activeDurationMinutes / 10
+)
+
+const totalXP =
+  Math.floor(distanceXP) +
+  durationXP
 
   const currentXP =
     Number(profile?.points) || 0
@@ -138,91 +149,60 @@ const newProgress = getProgress(newXP)
 
       <div className="xp-result-card">
 
-        {visibleLines >= 1 && (
-          <div className="xp-result-line">
-            <span>📏 Distanz</span>
-            <strong>
-              +{distanceXP} XP
-            </strong>
-          </div>
-        )}
+  {visibleLines >= 1 && (
+    <div className="xp-result-line">
+      <span>📏 Distanz</span>
+      <strong>
+        +{distanceXP} XP
+      </strong>
+    </div>
+  )}
 
-        {visibleLines >= 2 && (
-          <div className="xp-result-line">
-            <span>⛰️ Höhenmeter</span>
-            <strong>
-              +{elevationXP} XP
-            </strong>
-          </div>
-        )}
+  {visibleLines >= 2 && (
+    <div className="xp-result-line">
+      <span>🚵 Aktive Fahrzeit</span>
+      <strong>
+        +{durationXP} XP
+      </strong>
+    </div>
+  )}
 
-        {visibleLines >= 3 && (
-          <div className="xp-result-line">
-            <span>
-              🔴 Trail Schwierigkeit
-              {tour.difficulty && (
-                <> ({tour.difficulty})</>
-              )}
-            </span>
+  {showTotal && (
+    <>
+      <div className="xp-total">
+        <span>⭐ GESAMT</span>
 
-            <strong>
-              +{difficultyXP} XP
-            </strong>
-          </div>
-        )}
-
-        {visibleLines >= 4 && (
-          <div className="xp-result-line">
-            <span>🏁 Tour abgeschlossen</span>
-
-            <strong>
-              +{completionXP} XP
-            </strong>
-          </div>
-        )}
-
-        {showTotal && (
-          <>
-            <div className="xp-total">
-              <span>⭐ GESAMT</span>
-
-              <strong>
-                +{totalXP} XP
-              </strong>
-            </div>
-
-            <div className="xp-progress-section">
-
-              <div className="xp-progress-info">
-                <span>
-                  {currentXP} XP
-                </span>
-
-                <span>
-                  {newXP} XP
-                </span>
-              </div>
-
-              <div className="xp-progress-bar">
-                <div
-                  className="xp-progress-fill"
-                  style={{
-                    width: `${progress}%`,
-                  }}
-                />
-              </div>
-
-            </div>
-          </>
-        )}
-
+        <strong>
+          +{totalXP} XP
+        </strong>
       </div>
 
-      {showTotal && (
-        <button
-          className="create-button"
-          onClick={() => onComplete(totalXP)}
-        >
+      <div className="xp-progress-section">
+
+        <div className="xp-progress-info">
+          <span>
+            {currentXP} XP
+          </span>
+
+          <span>
+            {newXP} XP
+          </span>
+        </div>
+
+        <div className="xp-progress-bar">
+          <div
+            className="xp-progress-fill"
+            style={{
+              width: `${progress}%`,
+            }}
+          />
+        </div>
+
+      </div>
+    </>
+  )}
+
+</div>
           WEITER
           <span>→</span>
         </button>

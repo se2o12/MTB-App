@@ -4880,34 +4880,56 @@ button:disabled {
 
 .xp-progress-section {
   width: 100%;
-  margin-top: 28px;
+  margin-top: 32px;
 }
 
 .xp-progress-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
 
-  font-size: 14px;
+  margin-bottom: 10px;
+
+  font-size: 15px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.7);
 }
 
 .xp-progress-bar {
   width: 100%;
-  height: 12px;
+  height: 20px;
+
   background: rgba(255, 255, 255, 0.08);
+
   border-radius: 999px;
   overflow: hidden;
+
+  box-shadow:
+    inset 0 0 8px rgba(0, 0, 0, 0.35),
+    0 0 8px rgba(165, 245, 26, 0.15);
 }
 
 .xp-progress-fill {
   height: 100%;
   width: 0%;
+
   background: #a5f51a;
+
   border-radius: 999px;
 
-  transition: width 1.5s ease;
-  box-shadow: 0 0 12px rgba(165, 245, 26, 0.7);
+  box-shadow:
+    0 0 10px rgba(165, 245, 26, 0.7),
+    0 0 24px rgba(165, 245, 26, 0.35);
+
+  /*
+    Langsam starten,
+    schneller in der Mitte,
+    und am Ende wieder deutlich langsamer.
+  */
+  transition: width 3s cubic-bezier(
+    0.12,
+    0.72,
+    0.18,
+    1
+  );
 }

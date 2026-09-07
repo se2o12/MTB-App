@@ -71,6 +71,7 @@ function RecordingPage({ profile, onFinish }) {
   const startTimeRef = useRef(null)
 const pausedTimeRef = useRef(0)
 const lastActiveTimeRef = useRef(Date.now())
+const activeDurationRef = useRef(0)
 
   /* =====================================================
      ENTFERNUNG BERECHNEN
@@ -126,6 +127,8 @@ const lastActiveTimeRef = useRef(Date.now())
 
   if (!startTimeRef.current) {
     startTimeRef.current = Date.now()
+    activeDurationRef.current = 0
+lastActiveTimeRef.current = Date.now()
   }
 
   timerRef.current = setInterval(() => {
@@ -546,6 +549,15 @@ const startGPS = async () => {
 
   pausedRef.current = newPausedState
   setPaused(newPausedState)
+
+  if (newPausedState) {
+    lastActiveTimeRef.current = null
+  } else {
+    lastActiveTimeRef.current = Date.now()
+
+    // Nach der Pause neuen GPS-Punkt als Ausgangspunkt nehmen
+    lastPositionRef.current = null
+  }
 }
 
 /* =====================================================
@@ -553,19 +565,36 @@ const startGPS = async () => {
 ===================================================== */
 
 const calculateTourXP = (tour) => {
-  const distanceXP = Math.floor(
-    Number(tour.distance) || 0
-  )
+  const distance = Number(tour.distance) || 0
+
+  let distanceXP = 0
+  let remainingDistance = distance
+  let tier = 1
+
+  while (remainingDistance > 0) {
+    const kilometersInTier = Math.min(
+      5,
+      remainingDistance
+    )
+
+    distanceXP +=
+      kilometersInTier * tier
+
+    remainingDistance -= kilometersInTier
+    tier++
+  }
 
   const durationMinutes = Math.floor(
-    (Number(tour.duration) || 0) / 60
-  )
+  (Number(tour.activeDuration) || 0) / 60
+)
 
   const durationXP = Math.floor(
     durationMinutes / 10
   )
 
-  return distanceXP + durationXP
+  return Math.floor(
+    distanceXP + durationXP
+  )
 }
 
 /* =====================================================
@@ -633,6 +662,9 @@ const finishRecording = async () => {
   name: tourName.trim() || 'Meine MTB Tour',
   date: new Date().toISOString(),
   duration: seconds,
+  activeDuration: Math.floor(
+    activeDurationRef.current
+  ),
   distance: distance / 1000,
   elevation: Math.round(elevation),
   track: savedTrack,
