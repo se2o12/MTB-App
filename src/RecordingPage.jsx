@@ -62,6 +62,7 @@ function RecordingPage({ onFinish }) {
 
   const timerRef = useRef(null)
   const watchIdRef = useRef(null)
+  const backgroundWatcherRef = useRef(null)
 
   const lastPositionRef = useRef(null)
   const trackRef = useRef([])
@@ -159,7 +160,201 @@ useEffect(() => {
   pausedRef.current = paused
 }, [paused])
 
-const startGPS = () => {
+const startGPS = async () => {
+  setError('')
+
+  const isNativeIOS =
+    window.Capacitor?.isNativePlatform?.() &&
+    window.Capacitor?.getPlatform?.() === 'ios'
+
+  // iPhone-App mit Background-GPS
+  if (isNativeIOS) {
+    try {
+      if (backgroundWatcherRef.current !== null) {
+        await BackgroundGeolocation.removeWatcher({
+          id: backgroundWatcherRef.current,
+        })
+
+        backgroundWatcherRef.current = null
+      }
+
+      const watcherId =
+        await BackgroundGeolocation.addWatcher(
+          {
+            backgroundTitle: 'MTB Community',
+            backgroundMessage:
+              'Deine MTB-Tour wird im Hintergrund aufgezeichnet.',
+            requestPermissions: true,
+            stale: false,
+            distanceFilter: 2,
+          },
+
+          (location, gpsError) => {
+            if (gpsError) {
+              console.error(
+                'Background GPS Fehler:',
+                gpsError
+              )
+
+              if (
+                gpsError.code === 'NOT_AUTHORIZED'
+              ) {
+                setError(
+                  'GPS-Berechtigung fehlt. Bitte Standortzugriff in den iPhone-Einstellungen erlauben.'
+                )
+
+                BackgroundGeolocation.openSettings()
+              } else {
+                setError(
+                  'GPS konnte nicht ermittelt werden.'
+                )
+              }
+
+              return
+            }
+
+            if (!location) return
+
+            const {
+              latitude,
+              longitude,
+              altitude,
+              accuracy,
+            } = location
+
+            if (
+              accuracy !== null &&
+              accuracy !== undefined &&
+              accuracy > 100
+            ) {
+              return
+            }
+
+            const newPosition = {
+              lat: Number(latitude),
+              lon: Number(longitude),
+              altitude:
+                altitude ?? null,
+              accuracy:
+                accuracy ?? null,
+              time:
+                location.time ??
+                Date.now(),
+            }
+
+            setCurrentPosition(
+              newPosition
+            )
+
+            if (
+              !recordingRef.current ||
+              pausedRef.current
+            ) {
+              return
+            }
+
+            if (!lastPositionRef.current) {
+              lastPositionRef.current =
+                newPosition
+
+              const firstPoint = {
+                lat: Number(latitude),
+                lon: Number(longitude),
+              }
+
+              trackRef.current = [
+                firstPoint,
+              ]
+
+              setTrack([
+                firstPoint,
+              ])
+
+              return
+            }
+
+            const previous =
+              lastPositionRef.current
+
+            const meters =
+              calculateDistance(
+                previous.lat,
+                previous.lon,
+                latitude,
+                longitude
+              )
+
+            if (
+              meters > 2 &&
+              meters < 200
+            ) {
+              setDistance(
+                (value) =>
+                  value + meters
+              )
+
+              const newPoint = {
+                lat: Number(latitude),
+                lon: Number(longitude),
+              }
+
+              trackRef.current.push(
+                newPoint
+              )
+
+              setTrack([
+                ...trackRef.current,
+              ])
+            }
+
+            if (
+              altitude !== null &&
+              altitude !== undefined &&
+              previous.altitude !== null &&
+              previous.altitude !== undefined
+            ) {
+              const difference =
+                altitude -
+                previous.altitude
+
+              if (
+                difference > 1 &&
+                difference < 100
+              ) {
+                setElevation(
+                  (value) =>
+                    value + difference
+                )
+              }
+            }
+
+            lastPositionRef.current =
+              newPosition
+          }
+        )
+
+      backgroundWatcherRef.current =
+        watcherId
+
+      console.log(
+        'Background GPS gestartet:',
+        watcherId
+      )
+    } catch (gpsError) {
+      console.error(
+        'Background GPS konnte nicht gestartet werden:',
+        gpsError
+      )
+
+      setError(
+        'GPS konnte nicht gestartet werden.'
+      )
+    }
+
+    return
+  }
+
+  // Browser-Fallback
   if (!navigator.geolocation) {
     setError(
       'Dein Gerät unterstützt keine GPS-Ortung.'
@@ -167,9 +362,6 @@ const startGPS = () => {
     return
   }
 
-  /*
-     Alten GPS-Watcher sicher beenden
-  */
   if (watchIdRef.current !== null) {
     navigator.geolocation.clearWatch(
       watchIdRef.current
@@ -177,8 +369,6 @@ const startGPS = () => {
 
     watchIdRef.current = null
   }
-
-  setError('')
 
   watchIdRef.current =
     navigator.geolocation.watchPosition(
@@ -190,9 +380,6 @@ const startGPS = () => {
           accuracy,
         } = position.coords
 
-        /*
-           Ungenaue GPS-Werte ignorieren
-        */
         if (
           accuracy !== null &&
           accuracy !== undefined &&
@@ -211,15 +398,10 @@ const startGPS = () => {
           time: Date.now(),
         }
 
-        /*
-           Aktuelle Position immer anzeigen
-        */
-        setCurrentPosition(newPosition)
+        setCurrentPosition(
+          newPosition
+        )
 
-        /*
-           Nur während einer aktiven,
-           nicht pausierten Tour tracken
-        */
         if (
           !recordingRef.current ||
           pausedRef.current
@@ -227,20 +409,22 @@ const startGPS = () => {
           return
         }
 
-        /*
-           Erste GPS-Position
-        */
         if (!lastPositionRef.current) {
           lastPositionRef.current =
             newPosition
 
           const firstPoint = {
-  lat: Number(latitude),
-  lon: Number(longitude),
-}
+            lat: Number(latitude),
+            lon: Number(longitude),
+          }
 
-trackRef.current = [firstPoint]
-setTrack([firstPoint])
+          trackRef.current = [
+            firstPoint,
+          ]
+
+          setTrack([
+            firstPoint,
+          ])
 
           return
         }
@@ -248,9 +432,6 @@ setTrack([firstPoint])
         const previous =
           lastPositionRef.current
 
-        /*
-           Entfernung zum letzten Punkt
-        */
         const meters =
           calculateDistance(
             previous.lat,
@@ -259,10 +440,6 @@ setTrack([firstPoint])
             longitude
           )
 
-        /*
-           Kleine GPS-Sprünge ignorieren.
-           Sehr große Sprünge ebenfalls.
-        */
         if (
           meters > 2 &&
           meters < 200
@@ -273,18 +450,19 @@ setTrack([firstPoint])
           )
 
           const newPoint = {
-  lat: Number(latitude),
-  lon: Number(longitude),
-}
+            lat: Number(latitude),
+            lon: Number(longitude),
+          }
 
-trackRef.current.push(newPoint)
+          trackRef.current.push(
+            newPoint
+          )
 
-setTrack([...trackRef.current])
+          setTrack([
+            ...trackRef.current,
+          ])
         }
 
-        /*
-           Höhenmeter berechnen
-        */
         if (
           altitude !== null &&
           altitude !== undefined &&
@@ -295,10 +473,6 @@ setTrack([...trackRef.current])
             altitude -
             previous.altitude
 
-          /*
-             Nur realistische positive
-             Höhenänderungen berücksichtigen
-          */
           if (
             difference > 1 &&
             difference < 100
@@ -310,9 +484,6 @@ setTrack([...trackRef.current])
           }
         }
 
-        /*
-           Letzte Position aktualisieren
-        */
         lastPositionRef.current =
           newPosition
       },
@@ -323,23 +494,9 @@ setTrack([...trackRef.current])
           gpsError
         )
 
-        if (gpsError.code === 1) {
-          setError(
-            'GPS-Berechtigung wurde verweigert. Bitte Standortzugriff erlauben.'
-          )
-        } else if (gpsError.code === 2) {
-          setError(
-            'GPS-Position konnte nicht ermittelt werden.'
-          )
-        } else if (gpsError.code === 3) {
-          setError(
-            'GPS-Anfrage hat zu lange gedauert.'
-          )
-        } else {
-          setError(
-            'GPS konnte nicht ermittelt werden.'
-          )
-        }
+        setError(
+          'GPS konnte nicht ermittelt werden.'
+        )
       },
 
       {
