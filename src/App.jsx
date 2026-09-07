@@ -14,6 +14,8 @@ setWorkerUrl(maplibreWorker)
 
 import { supabase } from './supabaseClient'
 
+import TourResultPage from './TourResultPage'
+
 /* =====================================================
    GRAVITY CARD 2026
    32 BIKE-DESTINATIONEN
@@ -486,6 +488,86 @@ const GRAVITY_CARD_PARKS = [
     ],
   },
 ]
+/* =====================================================
+   🏆 XP / RANGSYSTEM
+===================================================== */
+
+const RANKS = [
+  {
+    level: 1,
+    name: 'Trail Rider',
+    points: 0,
+    icon: '/ranks/trail-rider.png',
+  },
+  {
+    level: 2,
+    name: 'Dirt Rider',
+    points: 500,
+    icon: '/ranks/dirt-rider.png',
+  },
+  {
+    level: 3,
+    name: 'Mountain Rider',
+    points: 1000,
+    icon: '/ranks/mountain-rider.png',
+  },
+  {
+    level: 4,
+    name: 'Gravity Rider',
+    points: 1500,
+    icon: '/ranks/gravity-rider.png',
+  },
+  {
+    level: 5,
+    name: 'Peak Rider',
+    points: 2000,
+    icon: '/ranks/peak-rider.png',
+  },
+  {
+    level: 6,
+    name: 'Enduro Rider',
+    points: 2500,
+    icon: '/ranks/enduro-rider.png',
+  },
+  {
+    level: 7,
+    name: 'Titan Rider',
+    points: 3000,
+    icon: '/ranks/titan-rider.png',
+  },
+  {
+    level: 8,
+    name: 'Pro Rider',
+    points: 4000,
+    icon: '/ranks/pro-rider.png',
+  },
+  {
+    level: 9,
+    name: 'Legend Rider',
+    points: 5000,
+    icon: '/ranks/legend-rider.png',
+  },
+  {
+    level: 10,
+    name: 'Elite Rider',
+    points: 6500,
+    icon: '/ranks/elite-rider.png',
+  },
+]
+
+const getRankFromXP = (xp) => {
+  const points = Number(xp) || 0
+
+  let currentRank = RANKS[0]
+
+  for (const rank of RANKS) {
+    if (points >= rank.points) {
+      currentRank = rank
+    }
+  }
+
+  return currentRank
+}
 
 /* =====================================================
    APP
@@ -496,6 +578,7 @@ function App() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activePage, setActivePage] = useState('home')
+  const [finishedTour, setFinishedTour] = useState(null)
   const [activeChat, setActiveChat] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
 
@@ -568,7 +651,7 @@ function App() {
       image: newProfile.image || null,
       points: newProfile.points ?? 0,
       level: newProfile.level ?? 1,
-      rank: newProfile.rank ?? 'Rookie',
+      rank: newProfile.rank ?? 'Trail Rider',
     }
 
     const { data, error } = await supabase
@@ -660,11 +743,27 @@ function App() {
         )}
 
         {activePage === 'recording' && (
-          <RecordingPage
-            onFinish={() => setActivePage('tours')}
-          />
-        )}
+  <RecordingPage
+    profile={profile}
+    onFinish={(tour) => {
+      setActivePage('tour-result')
+      setFinishedTour(tour)
+    }}
+  />
+)}
 
+{activePage === 'tour-result' && (
+  <TourResultPage
+    tour={finishedTour}
+    onComplete={() => {
+      setActivePage('home')
+    }}
+  />
+)}
+
+{activePage === 'stats' && (
+  <StatsPage />
+)}
         {activePage === 'stats' && (
           <StatsPage />
         )}
@@ -895,7 +994,7 @@ function ProfileSetup({ onComplete }) {
       image,
       points: 0,
       level: 1,
-      rank: 'Rookie',
+      rank: 'Trail Rider',
     })
   }
 

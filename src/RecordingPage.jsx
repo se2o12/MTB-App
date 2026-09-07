@@ -46,7 +46,7 @@ function MapFollower({ position, follow }) {
    TOUREN AUFZEICHNEN
 ===================================================== */
 
-function RecordingPage({ onFinish }) {
+function RecordingPage({ profile, onFinish }) {
   const [recording, setRecording] = useState(false)
   const [paused, setPaused] = useState(false)
 
@@ -548,9 +548,81 @@ const startGPS = async () => {
   setPaused(newPausedState)
 }
 
-  /* =====================================================
-     BEENDEN
-  ===================================================== */
+/* =====================================================
+   XP BERECHNEN
+===================================================== */
+
+const calculateTourXP = (tour) => {
+  const distanceXP = Math.floor(tour.distance)
+  const elevationXP = Math.floor(tour.elevation / 10)
+
+  const completionXP = 25
+  const difficultyXP = Number(tour.difficultyXP) || 0
+
+  const totalXP =
+    distanceXP +
+    elevationXP +
+    difficultyXP +
+    completionXP
+
+  return totalXP
+}
+
+const calculateDifficulty = (tour) => {
+  const distance = Number(tour.distance) || 0
+  const elevation = Number(tour.elevation) || 0
+
+  const elevationPerKm =
+    distance > 0
+      ? elevation / distance
+      : 0
+
+  if (
+    elevationPerKm >= 60 ||
+    elevation >= 1200
+  ) {
+    return 'extreme'
+  }
+
+  if (
+    elevationPerKm >= 45 ||
+    elevation >= 900
+  ) {
+    return 'expert'
+  }
+
+  if (
+    elevationPerKm >= 30 ||
+    elevation >= 600
+  ) {
+    return 'hard'
+  }
+
+  if (
+    elevationPerKm >= 15 ||
+    elevation >= 300
+  ) {
+    return 'medium'
+  }
+
+  return 'easy'
+}
+
+const calculateDifficultyXP = (difficulty) => {
+  const bonuses = {
+    easy: 10,
+    medium: 25,
+    hard: 50,
+    expert: 80,
+    extreme: 120,
+  }
+
+  return bonuses[difficulty] ?? 10
+}
+
+/* =====================================================
+   BEENDEN
+===================================================== */
 
 const finishRecording = async () => {
   /* =====================================================
@@ -608,30 +680,29 @@ const finishRecording = async () => {
      TOUR ERSTELLEN
   ===================================================== */
 
-  const tour = {
+  const baseTour = {
   id: Date.now(),
-
-  name:
-    tourName.trim() ||
-    'Meine MTB Tour',
-
-  date:
-    new Date().toISOString(),
-
-  duration:
-    seconds,
-
-  distance:
-    distance / 1000,
-
-  elevation:
-    Math.round(elevation),
-
-  // Die komplette GPS-Strecke
+  name: tourName.trim() || 'Meine MTB Tour',
+  date: new Date().toISOString(),
+  duration: seconds,
+  distance: distance / 1000,
+  elevation: Math.round(elevation),
   track: savedTrack,
-
-  // Kompatibilität mit älteren Touren
   route: savedTrack,
+}
+
+const difficulty = calculateDifficulty(baseTour)
+
+const difficultyXP = calculateDifficultyXP(difficulty)
+
+const tour = {
+  ...baseTour,
+  difficulty,
+  difficultyXP,
+  xp: calculateTourXP({
+    ...baseTour,
+    difficultyXP,
+  }),
 }
 
   /* =====================================================
