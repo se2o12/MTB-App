@@ -1,6 +1,8 @@
 
 import { useEffect, useRef, useState } from 'react'
+
 import { supabase } from './supabaseClient'
+
 import {
   MapContainer,
   TileLayer,
@@ -9,7 +11,7 @@ import {
   useMap,
 } from 'react-leaflet'
 
-import { registerPlugin } from '@capacitor/core'
+import { registerPlugin, Capacitor } from '@capacitor/core'
 
 const BackgroundGeolocation =
   registerPlugin('BackgroundGeolocation')
@@ -17,8 +19,8 @@ const BackgroundGeolocation =
 import 'leaflet/dist/leaflet.css'
 
 const isNativeIOS =
-  window.Capacitor?.isNativePlatform?.() &&
-  window.Capacitor?.getPlatform?.() === 'ios'
+  Capacitor.isNativePlatform() &&
+  Capacitor.getPlatform() === 'ios'
 
 /* =====================================================
    KARTE AUTOMATISCH ZUM GPS-PUNKT BEWEGEN
@@ -572,6 +574,7 @@ const finishRecording = async () => {
 
   backgroundWatcherRef.current = null
 }
+
   if (watchIdRef.current !== null) {
     navigator.geolocation.clearWatch(
       watchIdRef.current
