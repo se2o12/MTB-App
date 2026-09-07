@@ -1434,17 +1434,31 @@ const coordinates = Array.isArray(rawCoordinates)
       })
 
       map.addLayer({
-        id: 'tour-route-line',
+  id: 'tour-route-line',
+  type: 'line',
+  source: 'tour-route',
 
-        type: 'line',
+  layout: {
+    'line-cap': 'round',
+    'line-join': 'round',
+  },
 
-        source: 'tour-route',
+  paint: {
+    'line-color': '#a5f51a',
+    'line-width': 5,
+    'line-opacity': 0.95,
+    'line-blur': 0.3,
+  },
+})
 
-        paint: {
-          'line-width': 5,
-          'line-opacity': 0.9,
-        },
-      })
+const smoothCoordinates = coordinates.filter((_, index) => {
+  if (index === 0 || index === coordinates.length - 1) {
+    return true
+  }
+
+  // Jeden zweiten GPS-Punkt entfernen
+  return index % 2 === 0
+})
 
       /* -----------------------------------------
          STARTPUNKT

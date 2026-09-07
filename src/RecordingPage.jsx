@@ -9,7 +9,16 @@ import {
   useMap,
 } from 'react-leaflet'
 
+import { registerPlugin } from '@capacitor/core'
+
+const BackgroundGeolocation =
+  registerPlugin('BackgroundGeolocation')
+
 import 'leaflet/dist/leaflet.css'
+
+const isNativeIOS =
+  window.Capacitor?.isNativePlatform?.() &&
+  window.Capacitor?.getPlatform?.() === 'ios'
 
 /* =====================================================
    KARTE AUTOMATISCH ZUM GPS-PUNKT BEWEGEN
@@ -56,6 +65,9 @@ function RecordingPage({ onFinish }) {
 
   const lastPositionRef = useRef(null)
   const trackRef = useRef([])
+  const startTimeRef = useRef(null)
+const pausedTimeRef = useRef(0)
+const lastActiveTimeRef = useRef(Date.now())
 
   /* =====================================================
      ENTFERNUNG BERECHNEN
@@ -101,19 +113,33 @@ function RecordingPage({ onFinish }) {
   ===================================================== */
 
   useEffect(() => {
-    if (recording && !paused) {
-      timerRef.current = setInterval(() => {
-        setSeconds((value) => value + 1)
-      }, 1000)
+  if (!recording || paused) {
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
     }
+    return
+  }
 
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
+  if (!startTimeRef.current) {
+    startTimeRef.current = Date.now()
+  }
+
+  timerRef.current = setInterval(() => {
+    const elapsed = Math.floor(
+      (Date.now() - startTimeRef.current) / 1000
+    )
+
+    setSeconds(elapsed)
+  }, 1000)
+
+  return () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
     }
-  }, [recording, paused])
+  }
+}, [recording, paused])
 
   /* =====================================================
    GPS
@@ -338,6 +364,7 @@ setTrack([...trackRef.current])
   setSeconds(0)
   setDistance(0)
   setElevation(0)
+  startTimeRef.current = Date.now()
 
   setCurrentPosition(null)
   setTrack([])
