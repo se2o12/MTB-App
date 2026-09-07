@@ -553,71 +553,19 @@ const startGPS = async () => {
 ===================================================== */
 
 const calculateTourXP = (tour) => {
-  const distanceXP = Math.floor(tour.distance)
-  const elevationXP = Math.floor(tour.elevation / 10)
+  const distanceXP = Math.floor(
+    Number(tour.distance) || 0
+  )
 
-  const completionXP = 25
-  const difficultyXP = Number(tour.difficultyXP) || 0
+  const durationMinutes = Math.floor(
+    (Number(tour.duration) || 0) / 60
+  )
 
-  const totalXP =
-    distanceXP +
-    elevationXP +
-    difficultyXP +
-    completionXP
+  const durationXP = Math.floor(
+    durationMinutes / 10
+  )
 
-  return totalXP
-}
-
-const calculateDifficulty = (tour) => {
-  const distance = Number(tour.distance) || 0
-  const elevation = Number(tour.elevation) || 0
-
-  const elevationPerKm =
-    distance > 0
-      ? elevation / distance
-      : 0
-
-  if (
-    elevationPerKm >= 60 ||
-    elevation >= 1200
-  ) {
-    return 'extreme'
-  }
-
-  if (
-    elevationPerKm >= 45 ||
-    elevation >= 900
-  ) {
-    return 'expert'
-  }
-
-  if (
-    elevationPerKm >= 30 ||
-    elevation >= 600
-  ) {
-    return 'hard'
-  }
-
-  if (
-    elevationPerKm >= 15 ||
-    elevation >= 300
-  ) {
-    return 'medium'
-  }
-
-  return 'easy'
-}
-
-const calculateDifficultyXP = (difficulty) => {
-  const bonuses = {
-    easy: 10,
-    medium: 25,
-    hard: 50,
-    expert: 80,
-    extreme: 120,
-  }
-
-  return bonuses[difficulty] ?? 10
+  return distanceXP + durationXP
 }
 
 /* =====================================================
@@ -691,18 +639,9 @@ const finishRecording = async () => {
   route: savedTrack,
 }
 
-const difficulty = calculateDifficulty(baseTour)
-
-const difficultyXP = calculateDifficultyXP(difficulty)
-
 const tour = {
   ...baseTour,
-  difficulty,
-  difficultyXP,
-  xp: calculateTourXP({
-    ...baseTour,
-    difficultyXP,
-  }),
+  xp: calculateTourXP(baseTour),
 }
 
   /* =====================================================

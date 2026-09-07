@@ -4874,3 +4874,40 @@ button:disabled {
   }
 
 }
+/* =====================================================
+   XP ERGEBNISSE
+===================================================== */
+
+.xp-progress-section {
+  width: 100%;
+  margin-top: 28px;
+}
+
+.xp-progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.xp-progress-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.xp-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #a5f51a;
+  border-radius: 999px;
+
+  transition: width 1.5s ease;
+  box-shadow: 0 0 12px rgba(165, 245, 26, 0.7);
+}

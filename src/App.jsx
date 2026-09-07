@@ -671,6 +671,46 @@ function App() {
     setProfile(data)
   }
 
+  const addXP = async (earnedXP) => {
+  const xp = Number(earnedXP) || 0
+
+  const currentXP =
+    Number(profile?.points) || 0
+
+  const newXP = currentXP + xp
+
+  const newRank = getRankFromXP(newXP)
+
+  const updatedProfile = {
+    ...profile,
+    points: newXP,
+    level: newRank.level,
+    rank: newRank.name,
+  }
+
+  setProfile(updatedProfile)
+
+  if (!session?.user) {
+    return
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      points: newXP,
+      level: newRank.level,
+      rank: newRank.name,
+    })
+    .eq('id', session.user.id)
+
+  if (error) {
+    console.error(
+      'XP speichern fehlgeschlagen:',
+      error
+    )
+  }
+}
+
   const logout = async () => {
     await supabase.auth.signOut()
     setProfile(null)
@@ -755,7 +795,10 @@ function App() {
 {activePage === 'tour-result' && (
   <TourResultPage
     tour={finishedTour}
-    onComplete={() => {
+    onComplete={async (totalXP) => {
+      await addXP(totalXP)
+
+      setFinishedTour(null)
       setActivePage('home')
     }}
   />
@@ -1099,99 +1142,228 @@ function HomePage({
       </section>
 
       <section className="rank-card">
-  <div className="rank-content">
-    <span className="small-title">
-      DEIN RANG
-    </span>
+  {(() => {
+    const currentXP =
+      Number(profile?.points) || 0
 
-    <h2>Trail Rider</h2>
+    const currentRank =
+      getRankFromXP(currentXP)
 
-    <div className="rank-level">
-      Level 1
-    </div>
+    const currentRankIndex =
+      RANKS.findIndex(
+        (rank) =>
+          rank.level === currentRank.level
+      )
 
-    <strong>
-      0 Punkte
-    </strong>
-  </div>
+    const nextRank =
+      RANKS[currentRankIndex + 1] || null
 
-  <div className="rank-badge">
-    <img
-      src="/ranks/trail-rider.png"
-      alt="Trail Rider"
-    />
-  </div>
+    const progress = nextRank
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            ((currentXP - currentRank.points) /
+              (nextRank.points - currentRank.points)) *
+              100
+          )
+        )
+      : 100
 
-  <div className="progress">
-    <div
-      className="progress-bar"
-      style={{ width: '0%' }}
-    ></div>
-  </div>
+    return (
+      <>
+        <div className="rank-content">
+          <span className="small-title">
+            DEIN RANG
+          </span>
 
-  <div className="progress-text">
-    <span>
-      Nächstes Level: Dirt Rider
-    </span>
+          <h2>
+            {currentRank.name}
+          </h2>
 
-    <span>
-      500 Punkte
-    </span>
-  </div>
+          <div className="rank-level">
+            Level {currentRank.level}
+          </div>
+
+          <strong>
+            {currentXP} XP
+          </strong>
+        </div>
+
+        <div className="rank-badge">
+          <img
+            src={currentRank.icon}
+            alt={currentRank.name}
+          />
+        </div>
+
+        <div className="progress">
+          <div
+            className="progress-bar"
+            style={{
+              width: `${progress}%`,
+            }}
+          ></div>
+        </div>
+
+        <div className="progress-text">
+          <span>
+            {nextRank
+              ? `Nächstes Level: ${nextRank.name}`
+              : 'Maximaler Rang erreicht'}
+          </span>
+
+          <span>
+            {nextRank
+              ? `${currentXP} / ${nextRank.points} XP`
+              : `${currentXP} XP`}
+          </span>
+        </div>
+      </>
+    )
+  })()}
 </section>
 
       <section className="section">
-        <div className="section-heading">
-          <h2>Letzte Tour</h2>
-          <span>Heute</span>
-        </div>
+  <div className="section-heading">
+    <h2>Letzte Tour</h2>
+    <span>
+      {(() => {
+        const savedTours = JSON.parse(
+          localStorage.getItem('mtb_tours') || '[]'
+        )
 
+        if (savedTours.length === 0) {
+          return 'Noch keine Tour'
+        }
+
+        const latestTour = savedTours[0]
+
+        return new Date(
+          latestTour.date
+        ).toLocaleDateString('de-DE')
+      })()}
+    </span>
+  </div>
+
+  {(() => {
+    const savedTours = JSON.parse(
+      localStorage.getItem('mtb_tours') || '[]'
+    )
+
+    if (savedTours.length === 0) {
+      return (
         <div className="tour-card">
           <div className="tour-image">
             <div className="mountain">
               ⛰️
             </div>
-
-            <span className="trail-dot"></span>
           </div>
 
           <div className="tour-info">
             <div className="tour-title">
-              <span className="green-dot"></span>
-              Greenhill Line
+              Noch keine Tour
             </div>
 
             <span className="difficulty">
-              Schwer · Downhill
+              Zeichne deine erste Tour auf
             </span>
-
-            <div className="tour-stats">
-              <Stat
-                number="12,4"
-                unit="km"
-                label="Distanz"
-              />
-
-              <Stat
-                number="642"
-                unit="hm"
-                label="Höhenmeter"
-              />
-
-              <Stat
-                number="48:32"
-                label="Dauer"
-              />
-
-              <Stat
-                number="18,7"
-                unit="km/h"
-                label="Ø Geschwindigkeit"
-              />
-            </div>
           </div>
         </div>
-      </section>
+      )
+    }
+
+    const latestTour = savedTours[0]
+
+    const duration =
+      Number(latestTour.duration) || 0
+
+    const hours = Math.floor(
+      duration / 3600
+    )
+
+    const minutes = Math.floor(
+      (duration % 3600) / 60
+    )
+
+    const seconds =
+      duration % 60
+
+    const formattedDuration =
+      hours > 0
+        ? `${hours}:${minutes
+            .toString()
+            .padStart(2, '0')}:${seconds
+            .toString()
+            .padStart(2, '0')}`
+        : `${minutes}:${seconds
+            .toString()
+            .padStart(2, '0')}`
+
+    return (
+      <div className="tour-card">
+        <div className="tour-image">
+          <div className="mountain">
+            ⛰️
+          </div>
+
+          <span className="trail-dot"></span>
+        </div>
+
+        <div className="tour-info">
+          <div className="tour-title">
+            <span className="green-dot"></span>
+
+            {latestTour.name ||
+              'Meine MTB Tour'}
+          </div>
+
+          <span className="difficulty blue">
+            MTB TOUR
+          </span>
+
+          <div className="tour-stats">
+            <Stat
+              number={Number(
+                latestTour.distance || 0
+              ).toFixed(2)}
+              unit="km"
+              label="Distanz"
+            />
+
+            <Stat
+              number={Math.round(
+                latestTour.elevation || 0
+              )}
+              unit="hm"
+              label="Höhenmeter"
+            />
+
+            <Stat
+              number={formattedDuration}
+              label="Dauer"
+            />
+
+            <Stat
+              number={
+                duration > 0
+                  ? (
+                      (Number(
+                        latestTour.distance || 0
+                      ) /
+                        (duration / 3600))
+                    ).toFixed(1)
+                  : '0.0'
+              }
+              unit="km/h"
+              label="Ø Geschwindigkeit"
+            />
+          </div>
+        </div>
+      </div>
+    )
+  })()}
+</section>
 
 <button
   className="start-button"
