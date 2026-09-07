@@ -558,6 +558,20 @@ const finishRecording = async () => {
   recordingRef.current = false
   pausedRef.current = false
 
+  if (backgroundWatcherRef.current !== null) {
+  try {
+    await BackgroundGeolocation.removeWatcher({
+      id: backgroundWatcherRef.current,
+    })
+  } catch (error) {
+    console.error(
+      'Background GPS konnte nicht gestoppt werden:',
+      error
+    )
+  }
+
+  backgroundWatcherRef.current = null
+}
   if (watchIdRef.current !== null) {
     navigator.geolocation.clearWatch(
       watchIdRef.current
