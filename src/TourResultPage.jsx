@@ -202,7 +202,13 @@ const newProgress = getProgress(newXP)
     </>
   )}
 
-</div>
+      </div>
+
+      {showTotal && (
+        <button
+          className="tour-result-continue-button"
+          onClick={() => onComplete(totalXP)}
+        >
           WEITER
           <span>→</span>
         </button>
