@@ -4888,7 +4888,7 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
 
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 
   font-size: 15px;
   font-weight: 700;
@@ -4897,7 +4897,7 @@ button:disabled {
 
 .xp-progress-bar {
   width: 100%;
-  height: 20px;
+  height: 30px;
 
   background: rgba(255, 255, 255, 0.08);
 
@@ -4922,14 +4922,14 @@ button:disabled {
     0 0 24px rgba(165, 245, 26, 0.35);
 
   /*
-    Langsam starten,
-    schneller in der Mitte,
-    und am Ende wieder deutlich langsamer.
+    Altes Design behalten.
+    Deutlich langsamer und gleichmäßiger,
+    damit der Balken nicht sofort ans Ende springt.
   */
-  transition: width 3s cubic-bezier(
-    0.12,
-    0.72,
-    0.18,
+  transition: width 6s cubic-bezier(
+    0.22,
+    0.61,
+    0.36,
     1
   );
 }
