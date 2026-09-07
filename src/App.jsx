@@ -1313,11 +1313,57 @@ function TourDetailPage({
   useEffect(() => {
     if (!mapContainer.current) return
 
-    const coordinates =
-      tour.path ||
-      tour.route ||
-      tour.coordinates ||
-      []
+    const rawCoordinates =
+  tour.path ||
+  tour.route ||
+  tour.track ||
+  tour.coordinates ||
+  []
+
+const coordinates = Array.isArray(rawCoordinates)
+  ? rawCoordinates
+      .map((point) => {
+        // GPS-Punkt als Objekt
+        if (
+          point &&
+          typeof point === 'object' &&
+          !Array.isArray(point)
+        ) {
+          const lat = Number(point.lat)
+          const lon = Number(
+            point.lon ?? point.lng
+          )
+
+          if (
+            Number.isFinite(lat) &&
+            Number.isFinite(lon)
+          ) {
+            return [lon, lat]
+          }
+
+          return null
+        }
+
+        // Bereits im MapLibre-Format [lon, lat]
+        if (
+          Array.isArray(point) &&
+          point.length >= 2
+        ) {
+          const lon = Number(point[0])
+          const lat = Number(point[1])
+
+          if (
+            Number.isFinite(lon) &&
+            Number.isFinite(lat)
+          ) {
+            return [lon, lat]
+          }
+        }
+
+        return null
+      })
+      .filter(Boolean)
+  : []
 
     if (
       !Array.isArray(coordinates) ||

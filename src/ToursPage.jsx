@@ -519,6 +519,12 @@ export default function ToursPage() {
         'Touren aus localStorage:',
         savedTours
       )
+      console.log('ERSTER PUNKT:', route[0])
+console.log(
+  'LETZTER PUNKT:',
+  route[route.length - 1]
+)
+console.log('KOMPLETTE ROUTE:', route)
 
       setTours(
         Array.isArray(savedTours)
