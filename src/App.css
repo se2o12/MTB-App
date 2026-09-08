@@ -5110,8 +5110,8 @@ body,
 
   background:
     linear-gradient(
-      rgba(0, 0, 0, 0.02),
-      rgba(0, 0, 0, 0.02)
+      rgba(0, 0, 0, 0.12),
+      rgba(0, 0, 0, 0.12)
     ),
     url("/backgrounds/mtb-background.png") center center / cover
     no-repeat scroll !important;
@@ -5595,5 +5595,8 @@ body,
 }
 .app::before,
 .app::after {
+  display: none !important;
+}
+body::after {
   display: none !important;
 }
