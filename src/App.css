@@ -5563,3 +5563,6 @@ body,
     font-size: 10px;
   }
 }
+.rank-xp-title strong {
+  color: #ffffff !important;
+}
