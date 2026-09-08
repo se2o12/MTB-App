@@ -5651,60 +5651,96 @@ body::after {
   outline: none;
 }
 /* =====================================================
-   LETZTE TOUR – GROSSE INTERAKTIVE KARTE
+   LETZTE TOUR – INTERAKTIVE KARTE
 ===================================================== */
 
 .tour-preview-map {
   position: relative;
-  min-height: 300px;
-  height: 100%;
+  width: 100%;
+  height: 430px;
+  min-height: 430px;
+
   overflow: hidden;
   padding: 0 !important;
+
   background: #071009;
 }
 
-.mini-tour-map {
-  width: 100%;
-  height: 100%;
-  min-height: 300px;
+/* Karte */
+.tour-preview-map .mini-tour-map {
+  width: 100% !important;
+  height: 430px !important;
+  min-height: 430px !important;
+
   z-index: 1;
 }
 
-/* Leaflet UI */
+/* =====================================================
+   LEAFLET ZOOM
+===================================================== */
+
 .mini-tour-map .leaflet-control-zoom {
-  margin: 14px !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 12px !important;
+  margin: 18px !important;
+
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 14px !important;
+
   overflow: hidden;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.4);
 }
 
 .mini-tour-map .leaflet-control-zoom a {
-  width: 38px !important;
-  height: 38px !important;
-  line-height: 38px !important;
-  background: rgba(10, 15, 11, 0.82) !important;
+  width: 44px !important;
+  height: 44px !important;
+
+  line-height: 44px !important;
+
+  background: rgba(8, 13, 9, 0.88) !important;
   color: #ffffff !important;
+
   border: none !important;
-  font-size: 20px !important;
-  backdrop-filter: blur(12px);
+
+  font-size: 24px !important;
+
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
 }
 
 .mini-tour-map .leaflet-control-zoom a:hover {
-  background: rgba(165, 245, 26, 0.18) !important;
+  background: rgba(165, 245, 26, 0.2) !important;
   color: #a5f51a !important;
 }
+
+/* =====================================================
+   TOUCH / ZOOM
+===================================================== */
+
+.mini-tour-map {
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+/* =====================================================
+   ATTRIBUTION
+===================================================== */
 
 .mini-tour-map .leaflet-control-attribution {
   background: rgba(5, 8, 6, 0.65) !important;
   color: rgba(255, 255, 255, 0.55) !important;
+
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
+
+/* =====================================================
+   KEINE ROUTE
+===================================================== */
 
 .mini-tour-map-empty {
   width: 100%;
   height: 100%;
-  min-height: 300px;
+  min-height: 430px;
 
   display: flex;
   flex-direction: column;
@@ -5731,17 +5767,54 @@ body::after {
 .mini-tour-map-empty small {
   font-size: 12px;
 }
+
+/* =====================================================
+   TOUR-KARTE
+===================================================== */
+
+.tour-card {
+  overflow: hidden;
+
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+
+  width: 100%;
+  min-height: 430px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 23px;
+
+  background: rgba(17, 21, 18, 0.48);
+
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* =====================================================
+   HANDY
+===================================================== */
+
 @media (max-width: 800px) {
+
   .tour-card {
     grid-template-columns: 1fr;
+    min-height: 0;
   }
 
   .tour-preview-map {
-    min-height: 300px;
+    width: 100%;
+    height: 360px;
+    min-height: 360px;
   }
 
-  .mini-tour-map {
-    min-height: 300px;
+  .tour-preview-map .mini-tour-map {
+    width: 100% !important;
+    height: 360px !important;
+    min-height: 360px !important;
   }
 
   .tour-info {
@@ -5751,60 +5824,5 @@ body::after {
   .tour-stats {
     grid-template-columns: repeat(2, 1fr);
   }
-}
-.mini-tour-map {
-  touch-action: pan-x pan-y pinch-zoom;
-}
 
-/* Zoom Buttons */
-.mini-tour-map .leaflet-control-zoom {
-  margin: 18px !important;
-
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  border-radius: 14px !important;
-
-  overflow: hidden;
-
-  box-shadow:
-    0 8px 25px rgba(0, 0, 0, 0.4);
-}
-
-.mini-tour-map .leaflet-control-zoom a {
-  width: 44px !important;
-  height: 44px !important;
-
-  line-height: 44px !important;
-
-  background: rgba(8, 13, 9, 0.88) !important;
-  color: white !important;
-
-  border: none !important;
-
-  font-size: 24px !important;
-
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-}
-
-.mini-tour-map .leaflet-control-zoom a:hover {
-  background: rgba(165, 245, 26, 0.2) !important;
-  color: #a5f51a !important;
-}
-
-/* Handy */
-@media (max-width: 800px) {
-  .tour-card {
-    grid-template-columns: 1fr;
-    min-height: 0;
-  }
-
-  .tour-preview-map {
-    height: 360px;
-    min-height: 360px;
-  }
-
-  .tour-preview-map .mini-tour-map {
-    height: 360px !important;
-    min-height: 360px !important;
-  }
 }
