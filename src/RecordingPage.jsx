@@ -73,6 +73,20 @@ function RecordingPage({ profile, onFinish }) {
   const lastActiveTimeRef = useRef(Date.now())
   const activeDurationRef = useRef(0)
 
+  useEffect(() => {
+  if (!recording || paused) {
+    return
+  }
+
+  const interval = setInterval(() => {
+    activeDurationRef.current += 1
+  }, 1000)
+
+  return () => {
+    clearInterval(interval)
+  }
+}, [recording, paused])
+
   /* =====================================================
      ENTFERNUNG BERECHNEN
   ===================================================== */
@@ -263,9 +277,14 @@ const startGPS = async () => {
                 newPosition
 
               const firstPoint = {
-                lat: Number(latitude),
-                lon: Number(longitude),
-              }
+  lat: Number(latitude),
+  lon: Number(longitude),
+  altitude:
+    altitude !== null && altitude !== undefined
+      ? Number(altitude)
+      : null,
+  time: Date.now(),
+}
 
               trackRef.current = [
                 firstPoint,
@@ -299,9 +318,14 @@ const startGPS = async () => {
               )
 
               const newPoint = {
-                lat: Number(latitude),
-                lon: Number(longitude),
-              }
+  lat: Number(latitude),
+  lon: Number(longitude),
+  altitude:
+    altitude !== null && altitude !== undefined
+      ? Number(altitude)
+      : null,
+  time: Date.now(),
+}
 
               trackRef.current.push(
                 newPoint
@@ -642,11 +666,20 @@ const finishRecording = async () => {
   ===================================================== */
 
   const savedTrack = Array.isArray(trackRef.current)
-    ? trackRef.current.map((point) => ({
-        lat: Number(point.lat),
-        lon: Number(point.lon),
-      }))
-    : []
+  ? trackRef.current.map((point) => ({
+      lat: Number(point.lat),
+      lon: Number(point.lon),
+
+      altitude:
+        point.altitude !== null &&
+        point.altitude !== undefined
+          ? Number(point.altitude)
+          : null,
+
+      time:
+        point.time || Date.now(),
+    }))
+  : []
 
   console.log(
     'GPS-Punkte gespeichert:',

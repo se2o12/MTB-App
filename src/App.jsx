@@ -1122,6 +1122,122 @@ function ProfileSetup({ onComplete }) {
 /* =====================================================
    HOME
 ===================================================== */
+function MiniTourMap({ tour }) {
+  const mapContainer = useRef(null)
+  const mapRef = useRef(null)
+
+  useEffect(() => {
+    if (!mapContainer.current) return
+
+    const coordinates =
+      tour?.route ||
+      tour?.track ||
+      tour?.path ||
+      []
+
+    if (
+      !Array.isArray(coordinates) ||
+      coordinates.length < 2
+    ) {
+      return
+    }
+
+    const map = new Map({
+      container: mapContainer.current,
+
+      style: {
+        version: 8,
+
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: [
+              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+            attribution:
+              '© OpenStreetMap contributors',
+          },
+        },
+
+        layers: [
+          {
+            id: 'osm',
+            type: 'raster',
+            source: 'osm',
+          },
+        ],
+      },
+
+      center: coordinates[0],
+      zoom: 13,
+
+      attributionControl: false,
+      dragRotate: false,
+      touchZoomRotate: false,
+    })
+
+    mapRef.current = map
+
+    map.on('load', () => {
+      map.addSource('mini-tour-route', {
+        type: 'geojson',
+
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates,
+          },
+          properties: {},
+        },
+      })
+
+      map.addLayer({
+        id: 'mini-tour-route-line',
+        type: 'line',
+        source: 'mini-tour-route',
+
+        paint: {
+          'line-color': '#a5f51a',
+          'line-width': 4,
+          'line-opacity': 1,
+        },
+
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+      })
+
+      const bounds = coordinates.reduce(
+        (bounds, coordinate) =>
+          bounds.extend(coordinate),
+        new LngLatBounds(
+          coordinates[0],
+          coordinates[0]
+        )
+      )
+
+      map.fitBounds(bounds, {
+        padding: 25,
+        duration: 0,
+      })
+    })
+
+    return () => {
+      map.remove()
+      mapRef.current = null
+    }
+  }, [tour])
+
+  return (
+    <div
+      ref={mapContainer}
+      className="mini-tour-map"
+    />
+  )
+}
 
 function HomePage({
   profile,
@@ -1369,13 +1485,15 @@ function HomePage({
 
     return (
       <div className="tour-card">
-        <div className="tour-image">
-          <div className="mountain">
-            ⛰️
-          </div>
-
-          <span className="trail-dot"></span>
-        </div>
+        <div className="tour-image tour-preview-map">
+  {savedTours[0]?.route?.length > 0 ? (
+    <MiniTourMap tour={savedTours[0]} />
+  ) : (
+    <div className="mountain">
+      ⛰️
+    </div>
+  )}
+</div>
 
         <div className="tour-info">
           <div className="tour-title">
