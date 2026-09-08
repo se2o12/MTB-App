@@ -5593,3 +5593,7 @@ body,
 .welcome h1 {
   color: #ffffff !important;
 }
+.app::before,
+.app::after {
+  display: none !important;
+}
