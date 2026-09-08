@@ -5603,7 +5603,7 @@ body::after {
 .app {
   background:
   url("/backgrounds/mtb-background.png")
-  center top / 50% auto
+  center top / 100% auto
   repeat-y !important;
 
   background-color: transparent !important;
