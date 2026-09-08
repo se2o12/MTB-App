@@ -5600,3 +5600,11 @@ body,
 body::after {
   display: none !important;
 }
+.app {
+  background:
+    url("/backgrounds/mtb-background.png")
+    center top / cover
+    no-repeat !important;
+
+  background-color: transparent !important;
+}
