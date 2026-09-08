@@ -69,9 +69,9 @@ function RecordingPage({ profile, onFinish }) {
   const lastPositionRef = useRef(null)
   const trackRef = useRef([])
   const startTimeRef = useRef(null)
-const pausedTimeRef = useRef(0)
-const lastActiveTimeRef = useRef(Date.now())
-const activeDurationRef = useRef(0)
+  const pausedTimeRef = useRef(0)
+  const lastActiveTimeRef = useRef(Date.now())
+  const activeDurationRef = useRef(0)
 
   /* =====================================================
      ENTFERNUNG BERECHNEN

@@ -1141,87 +1141,154 @@ function HomePage({
         </p>
       </section>
 
-      <section className="rank-card">
+      <section className="rank-card rank-xp-card">
+
   {(() => {
-    const currentXP =
-      Number(profile?.points) || 0
+    const currentXP = Number(profile?.points) || 0
 
-    const currentRank =
-      getRankFromXP(currentXP)
+    // Aktuellen Rang anhand der echten XP bestimmen
+    const currentRank = getRankFromXP(currentXP)
 
-    const currentRankIndex =
-      RANKS.findIndex(
-        (rank) =>
-          rank.level === currentRank.level
-      )
+    // Nächsten Rang finden
+    const currentIndex = RANKS.findIndex(
+      (rank) => rank.level === currentRank.level
+    )
 
     const nextRank =
-      RANKS[currentRankIndex + 1] || null
+      currentIndex < RANKS.length - 1
+        ? RANKS[currentIndex + 1]
+        : null
 
-    const progress = nextRank
+    // XP innerhalb des aktuellen Rangs
+    const currentRankXP = currentRank.points
+
+    const nextRankXP = nextRank
+      ? nextRank.points
+      : currentRank.points
+
+    const xpInRank =
+      Math.max(0, currentXP - currentRankXP)
+
+    const xpNeeded =
+      Math.max(1, nextRankXP - currentRankXP)
+
+    const progressPercent = nextRank
       ? Math.min(
           100,
           Math.max(
             0,
-            ((currentXP - currentRank.points) /
-              (nextRank.points - currentRank.points)) *
-              100
+            (xpInRank / xpNeeded) * 100
           )
         )
       : 100
 
     return (
       <>
-        <div className="rank-content">
-          <span className="small-title">
-            DEIN RANG
-          </span>
+        <div className="rank-xp-header">
 
-          <h2>
-            {currentRank.name}
-          </h2>
+          {/* AKTUELLER RANG */}
+          <div className="rank-xp-side current-rank">
 
-          <div className="rank-level">
-            Level {currentRank.level}
+            <img
+              src={currentRank.icon}
+              alt={currentRank.name}
+            />
+
+            <span>LVL {currentRank.level}</span>
+
           </div>
 
-          <strong>
-            {currentXP} XP
-          </strong>
+
+          {/* XP LEISTE */}
+          <div className="rank-xp-main">
+
+            <div className="rank-xp-title">
+              <span></span>
+              <strong>XP</strong>
+              <span></span>
+            </div>
+
+            <div className="rank-xp-bar">
+
+              <div
+                className="rank-xp-fill"
+                style={{
+                  width: `${progressPercent}%`,
+                }}
+              />
+
+            </div>
+
+            <div className="rank-xp-numbers">
+
+              <strong>
+                {currentXP.toLocaleString('de-DE')}
+              </strong>
+
+              <span>
+                {nextRank
+                  ? ` / ${nextRank.points.toLocaleString('de-DE')}`
+                  : ' XP MAX'}
+              </span>
+
+            </div>
+
+          </div>
+
+
+          {/* NÄCHSTER RANG */}
+          <div className="rank-xp-side next-rank">
+
+            {nextRank ? (
+              <>
+                <img
+                  src={nextRank.icon}
+                  alt={nextRank.name}
+                />
+
+                <span>LVL {nextRank.level}</span>
+              </>
+            ) : (
+              <>
+                <div className="rank-xp-max">
+                  MAX
+                </div>
+
+                <span>MAX RANG</span>
+              </>
+            )}
+
+          </div>
+
         </div>
 
-        <div className="rank-badge">
-          <img
-            src={currentRank.icon}
-            alt={currentRank.name}
-          />
-        </div>
 
-        <div className="progress">
-          <div
-            className="progress-bar"
-            style={{
-              width: `${progress}%`,
-            }}
-          ></div>
-        </div>
+        {/* RANG-NAMEN */}
+        <div className="rank-xp-labels">
 
-        <div className="progress-text">
-          <span>
-            {nextRank
-              ? `Nächstes Level: ${nextRank.name}`
-              : 'Maximaler Rang erreicht'}
-          </span>
+          <div>
+            <strong>{currentRank.name}</strong>
+            <small>AKTUELL</small>
+          </div>
 
-          <span>
-            {nextRank
-              ? `${currentXP} / ${nextRank.points} XP`
-              : `${currentXP} XP`}
-          </span>
+          <div className="rank-xp-next-label">
+
+            {nextRank ? (
+              <>
+                <span>NÄCHSTER RANG</span>
+                <strong>{nextRank.name}</strong>
+              </>
+            ) : (
+              <strong>MAXIMALER RANG</strong>
+            )}
+
+          </div>
+
         </div>
       </>
     )
   })()}
+
 </section>
 
       <section className="section">

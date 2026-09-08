@@ -16,17 +16,61 @@
   font-synthesis: none;
 }
 
-body {
+/* =====================================================
+   MTB COMMUNITY – APP BACKGROUND
+===================================================== */
+
+html,
+body,
+#root {
+  min-height: 100%;
   margin: 0;
-  min-width: 320px;
+}
+
+body {
+  position: relative;
+
+  background-color: #050805;
+
+  background-image:
+    linear-gradient(
+      rgba(2, 5, 3, 0.28),
+      rgba(2, 5, 3, 0.28)
+    ),
+    url("/backgrounds/mtb-background.png");
+
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+
+  color: white;
+
+  overflow-x: hidden;
+}
+
+/* Leichte dunkle Vignette */
+body::after {
+  content: "";
+
+  position: fixed;
+  inset: 0;
+
+  pointer-events: none;
 
   background:
     radial-gradient(
-      circle at 50% -10%,
-      #172617 0%,
-      #080b08 42%,
-      #050705 100%
+      ellipse at center,
+      transparent 45%,
+      rgba(0, 0, 0, 0.48) 100%
     );
+
+  z-index: 9998;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 button,
@@ -43,17 +87,27 @@ button:disabled {
   opacity: .45;
 }
 
-/* APP */
+/* =====================================================
+   MTB COMMUNITY – APP BACKGROUND
+===================================================== */
 
 .app {
+  position: relative;
   min-height: 100vh;
 
-  background:
+  background-image:
     linear-gradient(
-      180deg,
-      rgba(15, 22, 16, .92),
-      #060806 60%
-    );
+      rgba(2, 5, 3, 0.18),
+      rgba(2, 5, 3, 0.18)
+    ),
+    url("/backgrounds/mtb-background.png");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+
+  background-color: #050805;
 }
 
 /* HEADER */
@@ -249,24 +303,99 @@ button:disabled {
   object-fit: contain;
 }
 
-.progress {
-  height: 7px;
+/* =====================================================
+   RANG / XP PROGRESS
+===================================================== */
 
-  margin-top: 30px;
+.progress {
+  position: relative;
+
+  width: 100%;
+  height: 14px;
+
+  margin-top: 26px;
+
+  padding: 2px;
+
+  background: rgba(0, 0, 0, 0.55);
+
+  border: 1px solid rgba(165, 245, 26, 0.18);
+
+  border-radius: 999px;
+
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.75),
+    0 0 12px rgba(165, 245, 26, 0.06);
 
   overflow: hidden;
-
-  border-radius: 20px;
-
-  background: #252c25;
 }
 
 .progress-bar {
-  width: 0%;
+  position: relative;
+
   height: 100%;
-  border-radius: inherit;
-  background: #a5f51a;
-  transition: width 0.4s ease;
+
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #78b900 0%,
+      #a5f51a 65%,
+      #caff72 100%
+    );
+
+  box-shadow:
+    0 0 8px rgba(165, 245, 26, 0.65),
+    0 0 18px rgba(165, 245, 26, 0.28);
+
+  transition:
+    width 1.2s cubic-bezier(
+      0.22,
+      0.61,
+      0.36,
+      1
+    );
+}
+
+/* kleiner Lichtstreifen */
+.progress-bar::after {
+  content: "";
+
+  position: absolute;
+
+  left: 8px;
+  right: 8px;
+  top: 2px;
+
+  height: 3px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* dezenter Glow am Ende */
+.progress-bar::before {
+  content: "";
+
+  position: absolute;
+
+  right: 2px;
+  top: 50%;
+
+  width: 8px;
+  height: 8px;
+
+  transform: translateY(-50%);
+
+  border-radius: 50%;
+
+  background: #d8ff91;
+
+  box-shadow:
+    0 0 8px #a5f51a,
+    0 0 16px rgba(165, 245, 26, 0.8);
 }
 
 .progress-text {
@@ -4880,7 +5009,7 @@ button:disabled {
 
 .xp-progress-section {
   width: 100%;
-  margin-top: 32px;
+  margin-top: 34px;
 }
 
 .xp-progress-info {
@@ -4892,44 +5021,545 @@ button:disabled {
 
   font-size: 15px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.72);
 }
 
+/* Äußerer Rahmen */
 .xp-progress-bar {
-  width: 100%;
-  height: 30px;
+  position: relative;
 
-  background: rgba(255, 255, 255, 0.08);
+  width: 100%;
+  height: 34px;
+
+  padding: 4px;
+
+  background: rgba(8, 12, 10, 0.95);
+
+  border: 1px solid rgba(165, 245, 26, 0.25);
 
   border-radius: 999px;
+
   overflow: hidden;
 
   box-shadow:
-    inset 0 0 8px rgba(0, 0, 0, 0.35),
-    0 0 8px rgba(165, 245, 26, 0.15);
+    inset 0 0 12px rgba(0, 0, 0, 0.8),
+    0 0 12px rgba(165, 245, 26, 0.08);
 }
 
+/* XP-Füllung */
 .xp-progress-fill {
+  position: relative;
+
   height: 100%;
   width: 0%;
 
-  background: #a5f51a;
+  background:
+    linear-gradient(
+      90deg,
+      #6fae0d 0%,
+      #a5f51a 55%,
+      #c5ff65 100%
+    );
 
   border-radius: 999px;
 
   box-shadow:
-    0 0 10px rgba(165, 245, 26, 0.7),
-    0 0 24px rgba(165, 245, 26, 0.35);
+    0 0 8px rgba(165, 245, 26, 0.8),
+    0 0 20px rgba(165, 245, 26, 0.45),
+    0 0 35px rgba(165, 245, 26, 0.2);
 
-  /*
-    Altes Design behalten.
-    Deutlich langsamer und gleichmäßiger,
-    damit der Balken nicht sofort ans Ende springt.
-  */
-  transition: width 6s cubic-bezier(
-    0.22,
-    0.61,
-    0.36,
-    1
-  );
+  transition:
+    width 7s cubic-bezier(
+      0.16,
+      0.72,
+      0.25,
+      1
+    );
+}
+
+/* Glanz auf der XP-Leiste */
+.xp-progress-fill::after {
+  content: "";
+
+  position: absolute;
+
+  top: 3px;
+  left: 8px;
+  right: 8px;
+
+  height: 35%;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.22);
+
+  opacity: 0.45;
+}
+/* =====================================================
+   🔥 MTB BACKGROUND – FINAL OVERRIDE
+===================================================== */
+
+html,
+body,
+#root {
+  background: #050805 !important;
+}
+
+.app {
+  min-height: 100vh !important;
+
+  background:
+    linear-gradient(
+      rgba(0, 0, 0, 0.12),
+      rgba(0, 0, 0, 0.12)
+    ),
+    url("/backgrounds/mtb-background.png") center center / cover
+    no-repeat fixed !important;
+}
+
+/* Alte Overlays entfernen */
+.app::before,
+.app::after {
+  display: none !important;
+}
+/* =====================================================
+   XP / RANG CARD
+===================================================== */
+
+.rank-xp-card {
+  position: relative;
+
+  padding: 28px 30px 24px;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(7, 14, 9, 0.96),
+      rgba(4, 8, 5, 0.96)
+    );
+
+  border: 1px solid rgba(165, 245, 26, 0.16);
+
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+
+/* =====================================================
+   HAUPTZEILE
+===================================================== */
+
+.rank-xp-header {
+  display: grid;
+
+  grid-template-columns: 100px minmax(0, 1fr) 100px;
+
+  align-items: center;
+
+  gap: 22px;
+
+  width: 100%;
+}
+
+
+/* =====================================================
+   RANG ICONS
+===================================================== */
+
+.rank-xp-side {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  min-width: 0;
+}
+
+.rank-xp-side img {
+  width: 76px;
+  height: 76px;
+
+  object-fit: contain;
+
+  display: block;
+
+  filter:
+    drop-shadow(
+      0 0 10px
+      rgba(165, 245, 26, 0.18)
+    );
+
+  transition:
+    transform 0.25s ease,
+    filter 0.25s ease;
+}
+
+.rank-xp-side img:hover {
+  transform: scale(1.06);
+
+  filter:
+    drop-shadow(
+      0 0 16px
+      rgba(165, 245, 26, 0.35)
+    );
+}
+
+.rank-xp-side span {
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.16em;
+
+  color: rgba(255, 255, 255, 0.48);
+}
+
+
+/* =====================================================
+   XP MITTE
+===================================================== */
+
+.rank-xp-main {
+  min-width: 0;
+}
+
+.rank-xp-title {
+  display: flex;
+
+  align-items: center;
+
+  gap: 14px;
+
+  margin-bottom: 10px;
+}
+
+.rank-xp-title span {
+  flex: 1;
+
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(165, 245, 26, 0.28)
+    );
+}
+
+.rank-xp-title span:last-child {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(165, 245, 26, 0.28),
+      transparent
+    );
+}
+
+.rank-xp-title strong {
+  font-size: 13px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.25em;
+
+  color: #a5f51a;
+
+  text-shadow:
+    0 0 10px
+    rgba(165, 245, 26, 0.35);
+}
+
+
+/* =====================================================
+   XP LEISTE
+===================================================== */
+
+.rank-xp-bar {
+  position: relative;
+
+  width: 100%;
+
+  /* DICKER */
+  height: 30px;
+
+  padding: 3px;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.82),
+      rgba(12, 18, 13, 0.96)
+    );
+
+  /* deutlich sichtbarer Rahmen */
+  border: 1px solid rgba(165, 245, 26, 0.32);
+
+  border-radius: 999px;
+
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(0, 0, 0, 0.8),
+    0 0 12px rgba(165, 245, 26, 0.08);
+}
+
+
+/* =====================================================
+   XP FÜLLUNG
+===================================================== */
+
+.rank-xp-fill {
+  position: relative;
+
+  height: 100%;
+
+  min-width: 0;
+
+  background:
+    linear-gradient(
+      90deg,
+      #78bd00 0%,
+      #9ff018 65%,
+      #baff4e 100%
+    );
+
+  /* KOMPLETT RUND */
+  border-radius: 999px;
+
+  /* sichtbarer grüner Rand */
+  border: 1px solid rgba(205, 255, 125, 0.65);
+
+  box-sizing: border-box;
+
+  box-shadow:
+    0 0 6px rgba(165, 245, 26, 0.75),
+    0 0 14px rgba(165, 245, 26, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.28);
+
+  transition:
+    width 0.8s cubic-bezier(
+      0.22,
+      0.61,
+      0.36,
+      1
+    );
+}
+
+
+/* dezenter Lichtstreifen */
+
+.rank-xp-fill::after {
+  content: "";
+
+  position: absolute;
+
+  left: 8px;
+  right: 8px;
+
+  top: 2px;
+
+  height: 4px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.22);
+}
+
+
+/* =====================================================
+   XP ZAHL
+===================================================== */
+
+.rank-xp-numbers {
+  display: flex;
+
+  align-items: baseline;
+
+  justify-content: center;
+
+  margin-top: 9px;
+}
+
+.rank-xp-numbers strong {
+  font-size: 18px;
+
+  font-weight: 900;
+
+  color: #a5f51a;
+
+  letter-spacing: 0.02em;
+}
+
+.rank-xp-numbers span {
+  font-size: 17px;
+
+  font-weight: 600;
+
+  color: rgba(255, 255, 255, 0.48);
+}
+
+
+/* =====================================================
+   RANG NAMEN
+===================================================== */
+
+.rank-xp-labels {
+  display: grid;
+
+  grid-template-columns: 100px minmax(0, 1fr) 100px;
+
+  gap: 22px;
+
+  margin-top: 12px;
+
+  align-items: start;
+}
+
+.rank-xp-labels > div:first-child {
+  grid-column: 1 / 2;
+
+  text-align: center;
+}
+
+.rank-xp-labels strong {
+  display: block;
+
+  font-size: 12px;
+
+  font-weight: 800;
+
+  color: #ffffff;
+}
+
+.rank-xp-labels small {
+  display: block;
+
+  margin-top: 3px;
+
+  font-size: 8px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.14em;
+
+  color: rgba(255, 255, 255, 0.35);
+}
+
+
+/* nächster Rang */
+
+.rank-xp-next-label {
+  grid-column: 3 / 4;
+
+  text-align: center;
+}
+
+.rank-xp-next-label span {
+  display: block;
+
+  margin-bottom: 3px;
+
+  font-size: 8px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.13em;
+
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.rank-xp-next-label strong {
+  color: rgba(165, 245, 26, 0.85);
+}
+
+
+/* =====================================================
+   MAX RANG
+===================================================== */
+
+.rank-xp-max {
+  width: 76px;
+  height: 76px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  border:
+    1px solid
+    rgba(165, 245, 26, 0.25);
+
+  color: #a5f51a;
+
+  font-size: 13px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.08em;
+
+  background:
+    rgba(165, 245, 26, 0.04);
+
+  box-shadow:
+    0 0 16px
+    rgba(165, 245, 26, 0.08);
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .rank-xp-card {
+    padding: 22px 16px 20px;
+  }
+
+  .rank-xp-header {
+    grid-template-columns: 68px minmax(0, 1fr) 68px;
+
+    gap: 10px;
+  }
+
+  .rank-xp-side img {
+    width: 58px;
+    height: 58px;
+  }
+
+  .rank-xp-bar {
+    height: 15px;
+  }
+
+  .rank-xp-numbers strong,
+  .rank-xp-numbers span {
+    font-size: 14px;
+  }
+
+  .rank-xp-labels {
+    grid-template-columns: 68px minmax(0, 1fr) 68px;
+
+    gap: 10px;
+  }
+
+  .rank-xp-max {
+    width: 58px;
+    height: 58px;
+
+    font-size: 10px;
+  }
 }
