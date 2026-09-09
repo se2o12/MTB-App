@@ -65,6 +65,7 @@ function RecordingPage({ profile, onFinish }) {
   const timerRef = useRef(null)
   const watchIdRef = useRef(null)
   const backgroundWatcherRef = useRef(null)
+  const backgroundListenerRef = useRef(null)
 
   const lastPositionRef = useRef(null)
   const trackRef = useRef([])
@@ -182,88 +183,72 @@ useEffect(() => {
 const startGPS = async () => {
   setError('')
 
-  const isNativeIOS =
-    window.Capacitor?.isNativePlatform?.() &&
-    window.Capacitor?.getPlatform?.() === 'ios'
+  const nativeIOS =
+    Capacitor.isNativePlatform() &&
+    Capacitor.getPlatform() === 'ios'
 
-  // iPhone-App mit Background-GPS
-  if (isNativeIOS) {
+  /* =====================================================
+     NATIVE iOS GPS
+  ===================================================== */
+
+  if (nativeIOS) {
     try {
-      if (backgroundWatcherRef.current !== null) {
-        await BackgroundGeolocation.removeWatcher({
-          id: backgroundWatcherRef.current,
-        })
-
-        backgroundWatcherRef.current = null
+      // Altes Location-Event entfernen
+      if (backgroundListenerRef.current) {
+        await backgroundListenerRef.current.remove()
+        backgroundListenerRef.current = null
       }
 
-      const watcherId =
-        await BackgroundGeolocation.addWatcher(
-          {
-            backgroundTitle: 'MTB Community',
-            backgroundMessage:
-              'Deine MTB-Tour wird im Hintergrund aufgezeichnet.',
-            requestPermissions: true,
-            stale: false,
-            distanceFilter: 2,
-          },
-
-          (location, gpsError) => {
-            if (gpsError) {
-              console.error(
-                'Background GPS Fehler:',
-                gpsError
-              )
-
-              if (
-                gpsError.code === 'NOT_AUTHORIZED'
-              ) {
-                setError(
-                  'GPS-Berechtigung fehlt. Bitte Standortzugriff in den iPhone-Einstellungen erlauben.'
-                )
-
-                BackgroundGeolocation.openSettings()
-              } else {
-                setError(
-                  'GPS konnte nicht ermittelt werden.'
-                )
-              }
-
-              return
-            }
-
+      // LOCATION EVENT
+      backgroundListenerRef.current =
+        await BackgroundGeolocation.addListener(
+          'location',
+          (location) => {
             if (!location) return
 
             const {
-              latitude,
-              longitude,
+              lat,
+              lon,
               altitude,
               accuracy,
+              speed,
+              time,
             } = location
 
             if (
               accuracy !== null &&
               accuracy !== undefined &&
-              accuracy > 100
+              Number(accuracy) > 100
             ) {
               return
             }
 
             const newPosition = {
-              lat: Number(latitude),
-              lon: Number(longitude),
+              lat: Number(lat),
+              lon: Number(lon),
               altitude:
-                altitude ?? null,
+                altitude !== null &&
+                altitude !== undefined
+                  ? Number(altitude)
+                  : null,
               accuracy:
-                accuracy ?? null,
+                accuracy !== null &&
+                accuracy !== undefined
+                  ? Number(accuracy)
+                  : null,
+              speed:
+                speed !== null &&
+                speed !== undefined
+                  ? Number(speed)
+                  : null,
               time:
-                location.time ??
-                Date.now(),
+                time !== null &&
+                time !== undefined
+                  ? Number(time)
+                  : Date.now(),
             }
 
-            setCurrentPosition(
-              newPosition
-            )
+            setCurrentPosition(newPosition)
 
             if (
               !recordingRef.current ||
@@ -272,19 +257,21 @@ const startGPS = async () => {
               return
             }
 
+            /* =========================================
+               ERSTER GPS-PUNKT
+            ========================================= */
+
             if (!lastPositionRef.current) {
               lastPositionRef.current =
                 newPosition
 
               const firstPoint = {
-  lat: Number(latitude),
-  lon: Number(longitude),
-  altitude:
-    altitude !== null && altitude !== undefined
-      ? Number(altitude)
-      : null,
-  time: Date.now(),
-}
+                lat: newPosition.lat,
+                lon: newPosition.lon,
+                altitude:
+                  newPosition.altitude,
+                time: newPosition.time,
+              }
 
               trackRef.current = [
                 firstPoint,
@@ -304,9 +291,13 @@ const startGPS = async () => {
               calculateDistance(
                 previous.lat,
                 previous.lon,
-                latitude,
-                longitude
+                newPosition.lat,
+                newPosition.lon
               )
+
+            /* =========================================
+               DISTANZ + TRACK
+            ========================================= */
 
             if (
               meters > 2 &&
@@ -318,14 +309,12 @@ const startGPS = async () => {
               )
 
               const newPoint = {
-  lat: Number(latitude),
-  lon: Number(longitude),
-  altitude:
-    altitude !== null && altitude !== undefined
-      ? Number(altitude)
-      : null,
-  time: Date.now(),
-}
+                lat: newPosition.lat,
+                lon: newPosition.lon,
+                altitude:
+                  newPosition.altitude,
+                time: newPosition.time,
+              }
 
               trackRef.current.push(
                 newPoint
@@ -336,14 +325,16 @@ const startGPS = async () => {
               ])
             }
 
+            /* =========================================
+               HÖHENMETER
+            ========================================= */
+
             if (
-              altitude !== null &&
-              altitude !== undefined &&
-              previous.altitude !== null &&
-              previous.altitude !== undefined
+              newPosition.altitude !== null &&
+              previous.altitude !== null
             ) {
               const difference =
-                altitude -
+                newPosition.altitude -
                 previous.altitude
 
               if (
@@ -362,16 +353,31 @@ const startGPS = async () => {
           }
         )
 
-      backgroundWatcherRef.current =
-        watcherId
+      // ERROR EVENT
+      await BackgroundGeolocation.addListener(
+        'error',
+        (gpsError) => {
+          console.error(
+            'Native GPS Fehler:',
+            gpsError
+          )
+
+          setError(
+            gpsError?.message ||
+              'GPS konnte nicht ermittelt werden.'
+          )
+        }
+      )
+
+      // NATIVE GPS STARTEN
+      await BackgroundGeolocation.start()
 
       console.log(
-        'Background GPS gestartet:',
-        watcherId
+        'Native iOS GPS gestartet.'
       )
     } catch (gpsError) {
       console.error(
-        'Background GPS konnte nicht gestartet werden:',
+        'Native iOS GPS konnte nicht gestartet werden:',
         gpsError
       )
 
@@ -383,7 +389,10 @@ const startGPS = async () => {
     return
   }
 
-  // Browser-Fallback
+  /* =====================================================
+     BROWSER GPS
+  ===================================================== */
+
   if (!navigator.geolocation) {
     setError(
       'Dein Gerät unterstützt keine GPS-Ortung.'
@@ -445,6 +454,12 @@ const startGPS = async () => {
           const firstPoint = {
             lat: Number(latitude),
             lon: Number(longitude),
+            altitude:
+              altitude !== null &&
+              altitude !== undefined
+                ? Number(altitude)
+                : null,
+            time: Date.now(),
           }
 
           trackRef.current = [
@@ -481,6 +496,12 @@ const startGPS = async () => {
           const newPoint = {
             lat: Number(latitude),
             lon: Number(longitude),
+            altitude:
+              altitude !== null &&
+              altitude !== undefined
+                ? Number(altitude)
+                : null,
+            time: Date.now(),
           }
 
           trackRef.current.push(
@@ -633,19 +654,24 @@ const finishRecording = async () => {
   recordingRef.current = false
   pausedRef.current = false
 
-  if (backgroundWatcherRef.current !== null) {
+  if (isNativeIOS) {
   try {
-    await BackgroundGeolocation.removeWatcher({
-      id: backgroundWatcherRef.current,
-    })
+    await BackgroundGeolocation.stop()
+
+    if (backgroundListenerRef.current) {
+      await backgroundListenerRef.current.remove()
+      backgroundListenerRef.current = null
+    }
+
+    console.log(
+      'Native iOS GPS gestoppt.'
+    )
   } catch (error) {
     console.error(
-      'Background GPS konnte nicht gestoppt werden:',
+      'Native GPS konnte nicht gestoppt werden:',
       error
     )
   }
-
-  backgroundWatcherRef.current = null
 }
 
   if (watchIdRef.current !== null) {
