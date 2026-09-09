@@ -2398,10 +2398,19 @@ function FriendsPage({ setActiveChat }) {
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
+  const [showCreateCommunity, setShowCreateCommunity] = useState(false)
+  const [communityName, setCommunityName] = useState('')
+  const [communityDescription, setCommunityDescription] = useState('')
+  const [communityImage, setCommunityImage] = useState(null)
+  const [selectedFriends, setSelectedFriends] = useState([])
+  const [communities, setCommunities] = useState([])
+  const [loadingCommunities, setLoadingCommunities] = useState(true)
+  const [activeCommunity, setActiveCommunity] = useState(null)
 
   useEffect(() => {
-    loadFriends()
-  }, [])
+  loadFriends()
+  loadCommunities()
+}, [])
 
   const loadFriends = async () => {
     setLoading(true)
@@ -2666,237 +2675,803 @@ function FriendsPage({ setActiveChat }) {
 
     await loadFriends()
   }
+const toggleCommunityFriend = (friendId) => {
+  setSelectedFriends((current) =>
+    current.includes(friendId)
+      ? current.filter((id) => id !== friendId)
+      : [...current, friendId]
+  )
+}
 
+const createCommunity = async () => {
+  if (!communityName.trim()) {
+    alert('Bitte gib einen Community-Namen ein.')
+    return
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    alert('Du bist nicht eingeloggt.')
+    return
+  }
+
+  try {
+    // Community erstellen
+    const { data: community, error: communityError } =
+      await supabase
+        .from('communities')
+        .insert({
+          name: communityName.trim(),
+          description: communityDescription.trim(),
+          image: communityImage,
+          owner_id: user.id,
+        })
+        .select()
+        .single()
+
+    if (communityError) {
+      console.error('Community erstellen:', communityError)
+      alert(
+        'Community konnte nicht erstellt werden: ' +
+        communityError.message
+      )
+      return
+    }
+
+    // Ersteller als Admin hinzufügen
+    const members = [
+      {
+        community_id: community.id,
+        user_id: user.id,
+        role: 'owner',
+      },
+
+      ...selectedFriends.map((friendId) => ({
+        community_id: community.id,
+        user_id: friendId,
+        role: 'member',
+      })),
+    ]
+
+    const { error: memberError } =
+      await supabase
+        .from('community_members')
+        .insert(members)
+
+    if (memberError) {
+      console.error(
+        'Community-Mitglieder:',
+        memberError
+      )
+
+      alert(
+        'Community wurde erstellt, aber die Mitglieder konnten nicht hinzugefügt werden.'
+      )
+
+      return
+    }
+
+    alert('Community erfolgreich erstellt! 🚀')
+
+    setCommunityName('')
+    setCommunityDescription('')
+    setCommunityImage(null)
+    setSelectedFriends([])
+    setShowCreateCommunity(false)
+
+  } catch (error) {
+    console.error('Community:', error)
+
+    alert(
+      'Beim Erstellen der Community ist ein Fehler aufgetreten.'
+    )
+  }
+}
+const loadCommunities = async () => {
+  setLoadingCommunities(true)
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    setCommunities([])
+    setLoadingCommunities(false)
+    return
+  }
+
+  const { data: memberships, error } =
+    await supabase
+      .from('community_members')
+      .select('community_id')
+      .eq('user_id', user.id)
+
+  if (error) {
+    console.error('Communitys laden:', error)
+    setCommunities([])
+    setLoadingCommunities(false)
+    return
+  }
+
+  const communityIds =
+    (memberships || []).map(
+      (membership) => membership.community_id
+    )
+
+  if (communityIds.length === 0) {
+    setCommunities([])
+    setLoadingCommunities(false)
+    return
+  }
+
+  const { data, error: communityError } =
+    await supabase
+      .from('communities')
+      .select(
+        'id, name, description, image, owner_id, created_at'
+      )
+      .in('id', communityIds)
+      .order('created_at', {
+        ascending: false,
+      })
+
+  if (communityError) {
+    console.error(
+      'Communitys laden:',
+      communityError
+    )
+    setCommunities([])
+  } else {
+    setCommunities(data || [])
+  }
+
+  setLoadingCommunities(false)
+}
+
+if (activeCommunity) {
   return (
-    <Page
-      title="Freunde"
-      eyebrow="DEINE COMMUNITY"
-    >
-      <div className="friends-add-box">
-        <h2>Freund hinzufügen</h2>
+    <CommunityPage
+      community={activeCommunity}
+      onBack={() => setActiveCommunity(null)}
+    />
+  )
+}
 
-        <p>
-          Suche nach dem Namen deines Freundes.
-        </p>
+return (
+  <Page
+    title="Freunde"
+    eyebrow="DEINE COMMUNITY"
+  >
 
-        <div className="friend-search">
-          <span>🔎</span>
+    {/* =====================================================
+       FREUND HINZUFÜGEN
+    ===================================================== */}
 
-          <input
-            type="text"
-            placeholder="Namen suchen..."
-            value={search}
-            onChange={(event) =>
-              searchUsers(event.target.value)
-            }
-          />
-        </div>
+    <div className="friends-add-box">
 
-        {searching && (
-          <div className="friend-search-info">
-            Suche...
-          </div>
-        )}
-
-        {results.length > 0 && (
-          <div className="friend-search-results">
-            {results.map((person) => (
-              <div
-                className="friend-result"
-                key={person.id}
-              >
-                <div className="large-avatar">
-                  {person.image ? (
-                    <img
-                      src={person.image}
-                      alt=""
-                    />
-                  ) : (
-                    '👤'
-                  )}
-                </div>
-
-                <div className="friend-details">
-                  <strong>{person.name}</strong>
-
-                  <span>
-                    {person.rank || 'Rookie'} · Level{' '}
-                    {person.level || 1}
-                  </span>
-                </div>
-
-                <button
-                  className="add-friend-button"
-                  onClick={() =>
-                    addFriend(person.id)
-                  }
-                >
-                  + Anfrage
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {search.length >= 2 &&
-          !searching &&
-          results.length === 0 && (
-            <div className="friend-search-info">
-              Kein Benutzer gefunden.
-            </div>
-          )}
+      <div className="section-heading">
+        <h2>Neuen Freund hinzufügen</h2>
       </div>
 
-      {requests.length > 0 && (
-        <div className="friends-section">
-          <div className="section-heading">
-            <h2>Freundschaftsanfragen</h2>
+      <div className="friend-search">
+        <input
+          type="text"
+          value={search}
+          onChange={(event) =>
+            searchUsers(event.target.value)
+          }
+          placeholder="Nach einem Namen suchen..."
+        />
+      </div>
 
-            <span>{requests.length}</span>
-          </div>
-
-          <div className="friend-requests">
-            {requests.map((request) => (
-              <div
-                className="friend-request"
-                key={request.id}
-              >
-                <div className="large-avatar">
-                  {request.profile.image ? (
-                    <img
-                      src={request.profile.image}
-                      alt=""
-                    />
-                  ) : (
-                    '👤'
-                  )}
-                </div>
-
-                <div className="friend-details">
-                  <strong>
-                    {request.profile.name}
-                  </strong>
-
-                  <span>
-                    möchte dein Freund werden
-                  </span>
-                </div>
-
-                <div className="request-buttons">
-                  <button
-                    className="accept-button"
-                    onClick={() =>
-                      acceptRequest(request)
-                    }
-                  >
-                    ✓
-                  </button>
-
-                  <button
-                    className="reject-button"
-                    onClick={() =>
-                      rejectRequest(request)
-                    }
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+      {searching && (
+        <div className="friend-search-info">
+          Suche läuft...
         </div>
       )}
 
-      <div className="friends-section">
-        <div className="section-heading">
-          <h2>Meine Freunde</h2>
+      {results.length > 0 && (
+        <div className="friend-search-results">
 
-          <span>{friends.length}</span>
+          {results.map((result) => (
+            <div
+              className="friend-card"
+              key={result.id}
+            >
+
+              <div className="friend-avatar">
+                {result.image ? (
+                  <img
+                    src={result.image}
+                    alt=""
+                  />
+                ) : (
+                  <span>
+                    {(result.name || '?')
+                      .charAt(0)
+                      .toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              <div className="friend-info">
+                <strong>
+                  {result.name}
+                </strong>
+
+                <small>
+                  {result.rank || 'Rider'}
+                </small>
+              </div>
+
+              <button
+                className="friend-action-button"
+                onClick={() =>
+                  addFriend(result.id)
+                }
+              >
+                Hinzufügen
+              </button>
+
+            </div>
+          ))}
+
+        </div>
+      )}
+
+    </div>
+
+
+    {/* =====================================================
+       COMMUNITY ERSTELLEN
+    ===================================================== */}
+
+    <button
+      className="create-community-button"
+      onClick={() =>
+        setShowCreateCommunity(true)
+      }
+    >
+      ＋ &nbsp; NEUE COMMUNITY ERSTELLEN
+    </button>
+
+
+    {/* =====================================================
+       FREUNDSCHAFTSANFRAGEN
+    ===================================================== */}
+
+    {requests.length > 0 && (
+      <section className="friends-section">
+
+        <div className="section-heading">
+          <h2>Freundschaftsanfragen</h2>
+
+          <span>
+            {requests.length}
+          </span>
         </div>
 
-        {loading ? (
-          <div className="friend-search-info">
-            Freunde werden geladen...
-          </div>
-        ) : friends.length === 0 ? (
-          <div className="empty-friends">
-            <span>👥</span>
+        <div className="friends-list">
 
-            <strong>
-              Noch keine Freunde
-            </strong>
+          {requests.map((request) => (
+            <div
+              className="friend-card"
+              key={request.id}
+            >
 
-            <small>
-              Suche oben nach einem Freund
-              und sende eine Anfrage.
-            </small>
-          </div>
-        ) : (
-          <div className="friend-list">
-            {friends.map((person) => (
-              <div
-                className="friend-card"
-                key={person.id}
-              >
-                <div className="large-avatar">
-                  {person.image ? (
-                    <img
-                      src={person.image}
-                      alt=""
-                    />
-                  ) : (
-                    '👤'
-                  )}
-                </div>
-
-                <div className="friend-details">
-                  <strong>
-                    {person.name}
-                  </strong>
-
+              <div className="friend-avatar">
+                {request.profile?.image ? (
+                  <img
+                    src={request.profile.image}
+                    alt=""
+                  />
+                ) : (
                   <span>
-                    {person.rank || 'Rookie'} · Level{' '}
-                    {person.level || 1}
+                    {(request.profile?.name || '?')
+                      .charAt(0)
+                      .toUpperCase()}
                   </span>
-                </div>
-
-                <button
-                  className="chat-button"
-                  onClick={() =>
-                    setActiveChat(person)
-                  }
-                  title="Chat öffnen"
-                >
-                  💬 Chat
-                </button>
-
-                <button
-                  className="remove-friend-button"
-                  onClick={() =>
-                    removeFriend(person.id)
-                  }
-                  title="Freund entfernen"
-                >
-                  Entfernen
-                </button>
-
-                <span
-                  className={
-                    person.last_seen &&
-                    Date.now() -
-                      new Date(
-                        person.last_seen
-                      ).getTime() <
-                      2 * 60 * 1000
-                      ? 'online-dot online'
-                      : 'online-dot offline'
-                  }
-                ></span>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="friend-info">
+                <strong>
+                  {request.profile?.name}
+                </strong>
+
+                <small>
+                  Möchte dein Freund werden
+                </small>
+              </div>
+
+              <div className="friend-request-actions">
+
+                <button
+                  className="friend-accept-button"
+                  onClick={() =>
+                    acceptRequest(request)
+                  }
+                >
+                  ✓
+                </button>
+
+                <button
+                  className="friend-reject-button"
+                  onClick={() =>
+                    rejectRequest(request)
+                  }
+                >
+                  ✕
+                </button>
+
+              </div>
+
+            </div>
+          ))}
+
+        </div>
+
+      </section>
+    )}
+
+
+    {/* =====================================================
+       FREUNDE
+    ===================================================== */}
+
+    <section className="friends-section">
+
+      <div className="section-heading">
+        <h2>Meine Freunde</h2>
+
+        <span>
+          {friends.length}
+        </span>
       </div>
+
+      {loading ? (
+        <div className="friend-search-info">
+          Freunde werden geladen...
+        </div>
+      ) : friends.length === 0 ? (
+        <div className="empty-friends">
+
+          <span>👥</span>
+
+          <strong>
+            Noch keine Freunde
+          </strong>
+
+          <small>
+            Suche oben nach anderen Ridern und
+            füge sie hinzu.
+          </small>
+
+        </div>
+      ) : (
+        <div className="friends-list">
+
+          {friends.map((friend) => (
+            <div
+              className="friend-card"
+              key={friend.id}
+            >
+
+              <div className="friend-avatar">
+                {friend.image ? (
+                  <img
+                    src={friend.image}
+                    alt=""
+                  />
+                ) : (
+                  <span>
+                    {(friend.name || '?')
+                      .charAt(0)
+                      .toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              <div className="friend-info">
+                <strong>
+                  {friend.name}
+                </strong>
+
+                <small>
+                  {friend.rank || 'Rider'}
+                </small>
+              </div>
+
+              <div className="friend-card-actions">
+
+                <button
+                  className="friend-chat-button"
+                  onClick={() =>
+                    setActiveChat(friend)
+                  }
+                >
+                  💬
+                </button>
+
+                <button
+                  className="friend-remove-button"
+                  onClick={() =>
+                    removeFriend(friend.id)
+                  }
+                >
+                  ✕
+                </button>
+
+              </div>
+
+            </div>
+          ))}
+
+        </div>
+      )}
+
+    </section>
+
+
+    {/* =====================================================
+       MEINE COMMUNITIES
+    ===================================================== */}
+
+    <div className="friends-section communities-section">
+
+      <div className="section-heading">
+
+        <h2>Meine Communitys</h2>
+
+        <span>
+          {communities.length}
+        </span>
+
+      </div>
+
+      {loadingCommunities ? (
+        <div className="friend-search-info">
+          Communitys werden geladen...
+        </div>
+      ) : communities.length === 0 ? (
+        <div className="empty-friends">
+
+          <span>👥</span>
+
+          <strong>
+            Noch keine Communitys
+          </strong>
+
+          <small>
+            Erstelle deine erste Community über
+            „Neue Community erstellen“.
+          </small>
+
+        </div>
+      ) : (
+        <div className="community-list">
+
+          {communities.map((community) => (
+            <div
+              className="community-card"
+              key={community.id}
+            >
+
+              <div className="community-card-image">
+
+                {community.image ? (
+                  <img
+                    src={community.image}
+                    alt=""
+                  />
+                ) : (
+                  <span>👥</span>
+                )}
+
+              </div>
+
+              <div className="community-card-info">
+
+                <strong>
+                  {community.name}
+                </strong>
+
+                <p>
+                  {community.description ||
+                    'Keine Beschreibung'}
+                </p>
+
+              </div>
+
+              <button
+                className="community-open-button"
+                onClick={() =>
+                  setActiveCommunity(community)
+                }
+              >
+                Öffnen
+              </button>
+
+            </div>
+          ))}
+
+        </div>
+      )}
+
+    </div>
+
+
+    {/* =====================================================
+       COMMUNITY ERSTELLEN MODAL
+    ===================================================== */}
+
+    {showCreateCommunity && (
+      <div
+        className="community-modal-overlay"
+        onClick={() =>
+          setShowCreateCommunity(false)
+        }
+      >
+
+        <div
+          className="community-modal"
+          onClick={(event) =>
+            event.stopPropagation()
+          }
+        >
+
+          <div className="section-heading">
+            <h2>Neue Community erstellen</h2>
+          </div>
+
+
+          <div className="community-form">
+
+            <label>
+              Community-Name
+
+              <input
+                type="text"
+                value={communityName}
+                onChange={(event) =>
+                  setCommunityName(
+                    event.target.value
+                  )
+                }
+                placeholder="z. B. Würzburg MTB Crew"
+              />
+
+            </label>
+
+
+            <label>
+              Beschreibung
+
+              <textarea
+                value={communityDescription}
+                onChange={(event) =>
+                  setCommunityDescription(
+                    event.target.value
+                  )
+                }
+                placeholder="Was ist das für eine Community?"
+                rows={4}
+              />
+
+            </label>
+
+
+            <label>
+              Community-Bild
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => {
+
+                  const file =
+                    event.target.files?.[0]
+
+                  if (!file) return
+
+                  const reader =
+                    new FileReader()
+
+                  reader.onload = () => {
+                    setCommunityImage(
+                      reader.result
+                    )
+                  }
+
+                  reader.readAsDataURL(file)
+
+                }}
+              />
+
+            </label>
+
+
+            {communityImage && (
+              <div className="community-image-preview">
+
+                <img
+                  src={communityImage}
+                  alt="Community Vorschau"
+                />
+
+              </div>
+            )}
+
+
+            <div className="community-friend-selection">
+
+              <h3>
+                Freunde hinzufügen
+              </h3>
+
+              {friends.length === 0 ? (
+                <p>
+                  Du hast noch keine Freunde.
+                </p>
+              ) : (
+                <div className="community-friend-list">
+
+                  {friends.map((friend) => {
+
+                    const selected =
+                      selectedFriends.includes(
+                        friend.id
+                      )
+
+                    return (
+                      <button
+                        type="button"
+                        key={friend.id}
+                        className={
+                          `community-friend-option ${
+                            selected
+                              ? 'selected'
+                              : ''
+                          }`
+                        }
+                        onClick={() =>
+                          toggleCommunityFriend(
+                            friend.id
+                          )
+                        }
+                      >
+
+                        <div className="friend-avatar">
+
+                          {friend.image ? (
+                            <img
+                              src={friend.image}
+                              alt=""
+                            />
+                          ) : (
+                            <span>
+                              {(friend.name || '?')
+                                .charAt(0)
+                                .toUpperCase()}
+                            </span>
+                          )}
+
+                        </div>
+
+                        <span>
+                          {friend.name}
+                        </span>
+
+                        <span className="community-check">
+                          {selected ? '✓' : ''}
+                        </span>
+
+                      </button>
+                    )
+                  })}
+
+                </div>
+              )}
+
+            </div>
+
+
+            <div className="community-modal-actions">
+
+              <button
+                type="button"
+                className="community-cancel-button"
+                onClick={() =>
+                  setShowCreateCommunity(false)
+                }
+              >
+                Abbrechen
+              </button>
+
+              <button
+                type="button"
+                className="community-save-button"
+                onClick={createCommunity}
+              >
+                Community erstellen
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    )}
+
+  </Page>
+)
+}
+
+
+function CommunityPage({ community, onBack }) {
+  return (
+    <Page
+      title={community.name}
+      eyebrow="COMMUNITY"
+    >
+
+      <button
+        className="community-back-button"
+        onClick={onBack}
+      >
+        ← Zurück zu Freunde
+      </button>
+
+
+      <div className="community-page-card">
+
+        <div className="community-page-image">
+
+          {community.image ? (
+            <img
+              src={community.image}
+              alt=""
+            />
+          ) : (
+            <span>👥</span>
+          )}
+
+        </div>
+
+        <h2>
+          {community.name}
+        </h2>
+
+        <p>
+          {community.description ||
+            'Keine Beschreibung'}
+        </p>
+
+      </div>
+
+
+      <div className="community-chat-placeholder">
+
+        <div className="community-chat-icon">
+          💬
+        </div>
+
+        <h3>
+          Community-Chat kommt als Nächstes
+        </h3>
+
+        <p>
+          Hier wird später der gemeinsame
+          Community-Chat erscheinen.
+        </p>
+
+      </div>
+
     </Page>
   )
 }
