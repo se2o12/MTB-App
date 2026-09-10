@@ -20,96 +20,176 @@ import { supabase } from './supabaseClient'
 
 import TourResultPage from './TourResultPage'
 
-function playNotificationSound(sound = 'pulse') {
+let notificationAudioContext = null
+
+function unlockNotificationAudio() {
   try {
     const AudioContext =
       window.AudioContext ||
       window.webkitAudioContext
 
-    if (!AudioContext) {
-      console.log('AudioContext nicht verfügbar')
+    if (!AudioContext) return
+
+    if (!notificationAudioContext) {
+      notificationAudioContext =
+        new AudioContext()
+    }
+
+    if (
+      notificationAudioContext.state ===
+      'suspended'
+    ) {
+      notificationAudioContext.resume()
+    }
+  } catch (error) {
+    console.error(
+      'Audio freischalten:',
+      error
+    )
+  }
+}
+
+function playNotificationSound(sound = 'pulse') {
+  try {
+    if (!notificationAudioContext) {
+      unlockNotificationAudio()
+    }
+
+    if (!notificationAudioContext) return
+
+    if (
+      notificationAudioContext.state ===
+      'suspended'
+    ) {
+      notificationAudioContext.resume()
       return
     }
 
-    const audioContext = new AudioContext()
+    const audioContext =
+      notificationAudioContext
 
-    const startSound = () => {
-      const now = audioContext.currentTime
+    const now =
+      audioContext.currentTime
 
-      const playTone = (
+    const playTone = (
+      frequency,
+      duration,
+      type = 'sine',
+      volume = 0.15,
+      delay = 0
+    ) => {
+      const oscillator =
+        audioContext.createOscillator()
+
+      const gain =
+        audioContext.createGain()
+
+      oscillator.type = type
+
+      oscillator.frequency.setValueAtTime(
         frequency,
-        duration,
-        type = 'sine',
-        volume = 0.15,
-        delay = 0
-      ) => {
-        const oscillator =
-          audioContext.createOscillator()
+        now + delay
+      )
 
-        const gain =
-          audioContext.createGain()
+      gain.gain.setValueAtTime(
+        0.001,
+        now + delay
+      )
 
-        oscillator.type = type
-        oscillator.frequency.setValueAtTime(
-          frequency,
-          now + delay
-        )
+      gain.gain.linearRampToValueAtTime(
+        volume,
+        now + delay + 0.02
+      )
 
-        gain.gain.setValueAtTime(
-          0.001,
-          now + delay
-        )
+      gain.gain.linearRampToValueAtTime(
+        0,
+        now + delay + duration
+      )
 
-        gain.gain.linearRampToValueAtTime(
-          volume,
-          now + delay + 0.02
-        )
+      oscillator.connect(gain)
+      gain.connect(
+        audioContext.destination
+      )
 
-        gain.gain.linearRampToValueAtTime(
-          0,
-          now + delay + duration
-        )
+      oscillator.start(
+        now + delay
+      )
 
-        oscillator.connect(gain)
-        gain.connect(audioContext.destination)
-
-        oscillator.start(now + delay)
-        oscillator.stop(
-          now + delay + duration + 0.02
-        )
-      }
-
-      if (sound === 'pulse') {
-        playTone(600, 0.14, 'sine', 0.18)
-        playTone(850, 0.16, 'sine', 0.14, 0.08)
-      }
-
-      if (sound === 'echo') {
-        playTone(650, 0.16, 'sine', 0.16)
-        playTone(650, 0.16, 'sine', 0.12, 0.18)
-      }
-
-      if (sound === 'boost') {
-        playTone(360, 0.16, 'triangle', 0.20)
-        playTone(540, 0.20, 'triangle', 0.16, 0.08)
-      }
-
-      if (sound === 'signal') {
-        playTone(900, 0.09, 'square', 0.10)
-        playTone(1200, 0.11, 'square', 0.08, 0.10)
-      }
-
-      setTimeout(() => {
-        audioContext.close()
-      }, 700)
+      oscillator.stop(
+        now +
+          delay +
+          duration +
+          0.03
+      )
     }
 
-    if (audioContext.state === 'suspended') {
-      audioContext.resume().then(startSound)
-    } else {
-      startSound()
+    if (sound === 'pulse') {
+      playTone(
+        600,
+        0.14,
+        'sine',
+        0.18
+      )
+
+      playTone(
+        850,
+        0.16,
+        'sine',
+        0.14,
+        0.08
+      )
     }
 
+    if (sound === 'echo') {
+      playTone(
+        650,
+        0.16,
+        'sine',
+        0.16
+      )
+
+      playTone(
+        650,
+        0.16,
+        'sine',
+        0.12,
+        0.18
+      )
+    }
+
+    if (sound === 'boost') {
+      playTone(
+        360,
+        0.16,
+        'triangle',
+        0.20
+      )
+
+      playTone(
+        540,
+        0.20,
+        'triangle',
+        0.16,
+        0.08
+      )
+    }
+
+    if (sound === 'signal') {
+      playTone(
+        900,
+        0.09,
+        'square',
+        0.10
+      )
+
+      playTone(
+        1200,
+        0.11,
+        'square',
+        0.08,
+        0.10
+      )
+    }
   } catch (error) {
     console.error(
       'Benachrichtigungston:',
@@ -694,6 +774,25 @@ const getRankFromXP = (xp) => {
 ===================================================== */
 
 function App() {
+    useEffect(() => {
+    const unlockAudio = () => {
+      unlockNotificationAudio()
+    }
+
+    window.addEventListener(
+      'pointerdown',
+      unlockAudio,
+      { once: true }
+    )
+
+    return () => {
+      window.removeEventListener(
+        'pointerdown',
+        unlockAudio
+      )
+    }
+  }, [])
+  
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -1047,7 +1146,7 @@ const checkForNewMessage = async () => {
   }
 }, [session, activeChat])
 
-  const loadProfile = async (userId) => {
+    const loadProfile = async (userId) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -1055,13 +1154,22 @@ const checkForNewMessage = async () => {
       .single()
 
     if (error) {
-      console.error('Fehler beim Laden des Profils:', error)
+      console.error(
+        'Fehler beim Laden des Profils:',
+        error
+      )
       setProfile(null)
       return
     }
 
     setProfile(data)
   }
+
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    loadProfile(session.user.id)
+  }, [session])
 
   const saveProfile = async (newProfile) => {
     if (!session?.user) return
