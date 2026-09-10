@@ -759,6 +759,14 @@ function App() {
   const [finishedTour, setFinishedTour] = useState(null)
   const [activeChat, setActiveChat] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
+  const [messageNotification, setMessageNotification] =
+  useState(null)
+
+  const lastNotificationMessageId =
+    useRef(null)
+
+  const notificationInitialized =
+    useRef(false)
 
   useEffect(() => {
     let mounted = true
@@ -796,13 +804,142 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!session?.user) {
-      setProfile(null)
+  if (!session?.user) {
+    notificationInitialized.current = false
+    lastNotificationMessageId.current = null
+    setMessageNotification(null)
+    return
+  }
+
+  let cancelled = false
+
+  const checkForNewMessage = async () => {
+    const { data, error } = await supabase
+      .from('messages')
+      .select(
+        'id, sender_id, receiver_id, content, created_at'
+      )
+      .eq('receiver_id', session.user.id)
+      .order('created_at', {
+        ascending: false,
+      })
+      .limit(1)
+
+    if (cancelled || error) {
+      if (error) {
+        console.error(
+          'Nachrichten-Benachrichtigung:',
+          error
+        )
+      }
+
       return
     }
 
-    loadProfile(session.user.id)
-  }, [session])
+    const newestMessage = data?.[0]
+
+    if (!newestMessage) return
+
+    // Beim ersten Laden nur die aktuelle Nachricht merken.
+    // Dadurch gibt es beim Öffnen der App keinen falschen Ton.
+    if (!notificationInitialized.current) {
+      lastNotificationMessageId.current =
+        newestMessage.id
+
+      notificationInitialized.current = true
+      return
+    }
+
+    // Nichts Neues
+    if (
+      newestMessage.id ===
+      lastNotificationMessageId.current
+    ) {
+      return
+    }
+
+    lastNotificationMessageId.current =
+      newestMessage.id
+
+    // Eigene Nachrichten niemals melden
+    if (
+      newestMessage.sender_id ===
+      session.user.id
+    ) {
+      return
+    }
+
+    // Wenn Benachrichtigungen ausgeschaltet sind:
+    // gar nichts machen.
+    const notificationsEnabled =
+      localStorage.getItem(
+        'mtb_notifications_enabled'
+      ) === 'true'
+
+    if (!notificationsEnabled) {
+      return
+    }
+
+    // Profil des Absenders laden
+    const { data: senderProfile } =
+      await supabase
+        .from('profiles')
+        .select('id, name, image')
+        .eq('id', newestMessage.sender_id)
+        .single()
+
+    if (cancelled) return
+
+    // Wenn wir bereits genau mit diesem Freund chatten,
+    // brauchen wir kein zusätzliches Banner.
+    if (
+      activeChat?.id ===
+      newestMessage.sender_id
+    ) {
+      return
+    }
+
+    playSelectedNotificationSound()
+
+    setMessageNotification({
+      id: newestMessage.id,
+      senderId: newestMessage.sender_id,
+      senderName:
+        senderProfile?.name ||
+        'Jemand',
+      senderImage:
+        senderProfile?.image || null,
+      content:
+        newestMessage.content || '',
+    })
+
+    // Banner nach 6 Sekunden automatisch schließen
+    setTimeout(() => {
+      setMessageNotification((current) => {
+        if (
+          current?.id ===
+          newestMessage.id
+        ) {
+          return null
+        }
+
+        return current
+      })
+    }, 6000)
+  }
+
+  checkForNewMessage()
+
+  const interval = setInterval(
+    checkForNewMessage,
+    2000
+  )
+
+  return () => {
+    cancelled = true
+    clearInterval(interval)
+  }
+}, [session, activeChat])
 
   const loadProfile = async (userId) => {
     const { data, error } = await supabase
@@ -916,6 +1053,56 @@ function App() {
 
   return (
     <div className="app">
+      {messageNotification && (
+  <button
+    type="button"
+    className="message-notification"
+    onClick={() => {
+      const friend = {
+        id: messageNotification.senderId,
+        name: messageNotification.senderName,
+        image: messageNotification.senderImage,
+      }
+
+      setMessageNotification(null)
+      setActivePage('friends')
+      setActiveChat(friend)
+    }}
+  >
+    <div className="message-notification-avatar">
+      {messageNotification.senderImage ? (
+        <img
+          src={
+            messageNotification.senderImage
+          }
+          alt=""
+        />
+      ) : (
+        '👤'
+      )}
+    </div>
+
+    <div className="message-notification-content">
+      <strong>
+        {messageNotification.senderName}
+      </strong>
+
+      <span>
+        hat dir eine Nachricht geschrieben
+      </span>
+
+      {messageNotification.content && (
+        <small>
+          {messageNotification.content}
+        </small>
+      )}
+    </div>
+
+    <span className="message-notification-arrow">
+      →
+    </span>
+  </button>
+)}
 
       <header className="topbar">
         <button
