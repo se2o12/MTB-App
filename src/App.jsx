@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import {
+  useEffect,
+  useState,
+  useRef
+} from 'react'
 import './App.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import {
@@ -15,6 +19,180 @@ setWorkerUrl(maplibreWorker)
 import { supabase } from './supabaseClient'
 
 import TourResultPage from './TourResultPage'
+
+function playNotificationSound(sound = 'pulse') {
+  try {
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext
+
+    if (!AudioContext) return
+
+    const audioContext = new AudioContext()
+
+    if (audioContext.state === 'suspended') {
+      audioContext.resume()
+    }
+
+    const now = audioContext.currentTime
+
+    const playTone = (
+      frequency,
+      duration,
+      type = 'sine',
+      volume = 0.12,
+      delay = 0
+    ) => {
+      const oscillator =
+        audioContext.createOscillator()
+
+      const gain =
+        audioContext.createGain()
+
+      oscillator.type = type
+
+      oscillator.frequency.setValueAtTime(
+        frequency,
+        now + delay
+      )
+
+      gain.gain.setValueAtTime(
+        0.0001,
+        now + delay
+      )
+
+      gain.gain.exponentialRampToValueAtTime(
+        volume,
+        now + delay + 0.01
+      )
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + delay + duration
+      )
+
+      oscillator.connect(gain)
+      gain.connect(audioContext.destination)
+
+      oscillator.start(
+        now + delay
+      )
+
+      oscillator.stop(
+        now + delay + duration
+      )
+    }
+
+    /* PULSE
+       kurzer, cleaner MTB-App-Ton
+    */
+    if (sound === 'pulse') {
+      playTone(
+        520,
+        0.16,
+        'sine',
+        0.13
+      )
+
+      playTone(
+        780,
+        0.18,
+        'sine',
+        0.10,
+        0.07
+      )
+    }
+
+    /* ECHO
+       weicher Doppelton
+    */
+    if (sound === 'echo') {
+      playTone(
+        660,
+        0.18,
+        'sine',
+        0.11
+      )
+
+      playTone(
+        660,
+        0.18,
+        'sine',
+        0.075,
+        0.14
+      )
+    }
+
+    /* BOOST
+       etwas tiefer und kräftiger
+    */
+    if (sound === 'boost') {
+      playTone(
+        330,
+        0.16,
+        'triangle',
+        0.15
+      )
+
+      playTone(
+        495,
+        0.20,
+        'triangle',
+        0.12,
+        0.08
+      )
+    }
+
+    /* SIGNAL
+       moderner kurzer elektronischer Ton
+    */
+    if (sound === 'signal') {
+      playTone(
+        880,
+        0.09,
+        'square',
+        0.055
+      )
+
+      playTone(
+        1175,
+        0.12,
+        'square',
+        0.045,
+        0.09
+      )
+    }
+
+    setTimeout(() => {
+      audioContext.close()
+    }, 500)
+
+  } catch (error) {
+    console.error(
+      'Benachrichtigungston:',
+      error
+    )
+  }
+}
+
+
+function playSelectedNotificationSound() {
+  const enabled =
+    localStorage.getItem(
+      'mtb_notifications_enabled'
+    ) === 'true'
+
+  if (!enabled) return
+
+  const selectedSound =
+    localStorage.getItem(
+      'mtb_notification_sound'
+    ) || 'pulse'
+
+  playNotificationSound(
+    selectedSound
+  )
+}
 
 /* =====================================================
    GRAVITY CARD 2026
@@ -2176,6 +2354,7 @@ function InfoCard({
     </div>
   )
 }
+
 /* =====================================================
    💬 CHAT
 ===================================================== */
@@ -2186,6 +2365,8 @@ function ChatPage({ friend, onBack }) {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
+  const previousMessageCount = useRef(0)
+  const hasLoadedMessages = useRef(false)
 
   useEffect(() => {
   const getCurrentUser = async () => {
@@ -2222,8 +2403,29 @@ function ChatPage({ friend, onBack }) {
       console.error('Nachrichten laden:', error)
       setMessages([])
     } else {
-      setMessages(data || [])
-    }
+  const newMessages = data || []
+
+  if (
+    hasLoadedMessages.current &&
+    newMessages.length >
+      previousMessageCount.current
+  ) {
+    const newestMessage =
+      newMessages[newMessages.length - 1]
+
+    if (
+  newestMessage?.sender_id !== user.id
+) {
+  playSelectedNotificationSound()
+}
+
+  previousMessageCount.current =
+    newMessages.length
+
+  hasLoadedMessages.current = true
+
+  setMessages(newMessages)
+}
 
     setLoading(false)
   }
@@ -2386,7 +2588,8 @@ function ChatPage({ friend, onBack }) {
       </div>
     </Page>
   )
-}
+}}
+
 /* =====================================================
    FREUNDE
 ===================================================== */
@@ -3428,6 +3631,11 @@ function CommunityPage({ community, onBack }) {
   const [sending, setSending] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [memberProfiles, setMemberProfiles] = useState({})
+  const previousCommunityMessageCount =
+  useRef(0)
+
+  const hasLoadedCommunityMessages =
+    useRef(false)
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -3492,7 +3700,13 @@ function CommunityPage({ community, onBack }) {
   }
 
   const loadMessages = async () => {
-    if (!community?.id) return
+  if (!community?.id) return
+
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
+
+  if (!user) return
 
     const { data, error } = await supabase
       .from('community_messages')
@@ -3509,8 +3723,32 @@ function CommunityPage({ community, onBack }) {
       )
       setMessages([])
     } else {
-      setMessages(data || [])
+  const newMessages = data || []
+
+  if (
+    hasLoadedCommunityMessages.current &&
+    newMessages.length >
+      previousCommunityMessageCount.current
+  ) {
+    const newestMessage =
+      newMessages[newMessages.length - 1]
+
+    if (
+  newestMessage?.sender_id !==
+  user.id
+) {
+      playSelectedNotificationSound()
     }
+  }
+
+  previousCommunityMessageCount.current =
+    newMessages.length
+
+  hasLoadedCommunityMessages.current =
+    true
+
+  setMessages(newMessages)
+}
 
     setLoading(false)
   }
@@ -5079,8 +5317,48 @@ function ProfileModal({
 
   const [image, setImage] =
     useState(profile.image)
+    const [notificationsEnabled, setNotificationsEnabled] =
+  useState(
+    localStorage.getItem(
+      'mtb_notifications_enabled'
+    ) === 'true'
+  )
+
+const [selectedSound, setSelectedSound] =
+  useState(
+    localStorage.getItem(
+      'mtb_notification_sound'
+    ) || 'pulse'
+  )
 
   const fileInput = useRef(null)
+  useEffect(() => {
+  const updateNotificationSettings = () => {
+    setNotificationsEnabled(
+      localStorage.getItem(
+        'mtb_notifications_enabled'
+      ) === 'true'
+    )
+
+    setSelectedSound(
+      localStorage.getItem(
+        'mtb_notification_sound'
+      ) || 'pulse'
+    )
+  }
+
+  window.addEventListener(
+    'mtb-notification-settings-changed',
+    updateNotificationSettings
+  )
+
+  return () => {
+    window.removeEventListener(
+      'mtb-notification-settings-changed',
+      updateNotificationSettings
+    )
+  }
+}, [])
 
   const chooseImage = (event) => {
     const file =
@@ -5101,6 +5379,7 @@ function ProfileModal({
   return (
     <div className="modal-background">
       <div className="profile-modal">
+
         <button
           className="close-button"
           onClick={onClose}
@@ -5165,12 +5444,180 @@ function ProfileModal({
           SPEICHERN
         </button>
 
+        {/* =====================================================
+            BENACHRICHTIGUNGEN
+        ===================================================== */}
+
+       <div className="notification-settings">
+
+  <div className="notification-settings-header">
+
+    <div className="notification-settings-title">
+      <strong>Benachrichtigungen</strong>
+      <small>Neue Nachrichten</small>
+    </div>
+
+    <button
+      type="button"
+  className={`notification-toggle ${
+  notificationsEnabled
+    ? 'enabled'
+    : ''
+}`}
+      onClick={() => {
+  const nextValue =
+    !notificationsEnabled
+
+  localStorage.setItem(
+    'mtb_notifications_enabled',
+    String(nextValue)
+  )
+
+  setNotificationsEnabled(
+    nextValue
+  )
+
+  window.dispatchEvent(
+    new Event(
+      'mtb-notification-settings-changed'
+    )
+  )
+}}
+    >
+      <span></span>
+
+      {notificationsEnabled
+  ? 'AN'
+  : 'AUS'}
+    </button>
+
+  </div>
+
+  {notificationsEnabled && (
+
+    <div className="notification-sound-settings">
+
+      <label className="input-label">
+        BENACHRICHTIGUNGSTON
+      </label>
+
+      <div className="notification-sound-list">
+
+        {[
+          {
+            id: 'pulse',
+            name: 'Pulse',
+            description: 'Kurz & clean',
+            icon: '◉',
+          },
+          {
+            id: 'echo',
+            name: 'Echo',
+            description: 'Sanfter Doppelton',
+            icon: '〽',
+          },
+          {
+            id: 'boost',
+            name: 'Boost',
+            description: 'Kräftig & direkt',
+            icon: '⚡',
+          },
+          {
+            id: 'signal',
+            name: 'Signal',
+            description: 'Modern & digital',
+            icon: '◆',
+          },
+        ].map((sound) => {
+
+          const selected =
+  selectedSound === sound.id
+
+          return (
+            <button
+              type="button"
+              key={sound.id}
+              className={`notification-sound-option ${
+                selected
+                  ? 'selected'
+                  : ''
+              }`}
+              onClick={() => {
+
+      localStorage.setItem(
+          'mtb_notification_sound',
+          sound.id
+        )
+
+        setSelectedSound(
+          sound.id
+        )
+
+        playNotificationSound(
+          sound.id
+        )
+
+        window.dispatchEvent(
+          new Event(
+            'mtb-notification-settings-changed'
+          )
+        )
+      }}
+            >
+
+              <span className="notification-sound-icon">
+                {sound.icon}
+              </span>
+
+              <span className="notification-sound-info">
+
+                <strong>
+                  {sound.name}
+                </strong>
+
+                <small>
+                  {sound.description}
+                </small>
+
+              </span>
+
+              <span
+                className={`notification-sound-check ${
+                  selected
+                    ? 'selected'
+                    : ''
+                }`}
+              >
+                {selected ? '✓' : ''}
+              </span>
+
+            </button>
+          )
+        })}
+
+      </div>
+
+      <small className="notification-sound-hint">
+        Tippe auf einen Ton, um ihn direkt zu testen.
+      </small>
+
+    </div>
+
+  )}
+
+</div>
+
+        {/* =====================================================
+            AUSLOGGEN
+        ===================================================== */}
+
         <button
           className="logout-button"
           onClick={onLogout}
         >
           AUSLOGGEN
         </button>
+
       </div>
     </div>
   )
