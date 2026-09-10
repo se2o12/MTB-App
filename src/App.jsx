@@ -26,146 +26,89 @@ function playNotificationSound(sound = 'pulse') {
       window.AudioContext ||
       window.webkitAudioContext
 
-    if (!AudioContext) return
+    if (!AudioContext) {
+      console.log('AudioContext nicht verfügbar')
+      return
+    }
 
     const audioContext = new AudioContext()
 
-    if (audioContext.state === 'suspended') {
-      audioContext.resume()
-    }
+    const startSound = () => {
+      const now = audioContext.currentTime
 
-    const now = audioContext.currentTime
-
-    const playTone = (
-      frequency,
-      duration,
-      type = 'sine',
-      volume = 0.12,
-      delay = 0
-    ) => {
-      const oscillator =
-        audioContext.createOscillator()
-
-      const gain =
-        audioContext.createGain()
-
-      oscillator.type = type
-
-      oscillator.frequency.setValueAtTime(
+      const playTone = (
         frequency,
-        now + delay
-      )
+        duration,
+        type = 'sine',
+        volume = 0.15,
+        delay = 0
+      ) => {
+        const oscillator =
+          audioContext.createOscillator()
 
-      gain.gain.setValueAtTime(
-        0.0001,
-        now + delay
-      )
+        const gain =
+          audioContext.createGain()
 
-      gain.gain.exponentialRampToValueAtTime(
-        volume,
-        now + delay + 0.01
-      )
+        oscillator.type = type
+        oscillator.frequency.setValueAtTime(
+          frequency,
+          now + delay
+        )
 
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        now + delay + duration
-      )
+        gain.gain.setValueAtTime(
+          0.001,
+          now + delay
+        )
 
-      oscillator.connect(gain)
-      gain.connect(audioContext.destination)
+        gain.gain.linearRampToValueAtTime(
+          volume,
+          now + delay + 0.02
+        )
 
-      oscillator.start(
-        now + delay
-      )
+        gain.gain.linearRampToValueAtTime(
+          0,
+          now + delay + duration
+        )
 
-      oscillator.stop(
-        now + delay + duration
-      )
+        oscillator.connect(gain)
+        gain.connect(audioContext.destination)
+
+        oscillator.start(now + delay)
+        oscillator.stop(
+          now + delay + duration + 0.02
+        )
+      }
+
+      if (sound === 'pulse') {
+        playTone(600, 0.14, 'sine', 0.18)
+        playTone(850, 0.16, 'sine', 0.14, 0.08)
+      }
+
+      if (sound === 'echo') {
+        playTone(650, 0.16, 'sine', 0.16)
+        playTone(650, 0.16, 'sine', 0.12, 0.18)
+      }
+
+      if (sound === 'boost') {
+        playTone(360, 0.16, 'triangle', 0.20)
+        playTone(540, 0.20, 'triangle', 0.16, 0.08)
+      }
+
+      if (sound === 'signal') {
+        playTone(900, 0.09, 'square', 0.10)
+        playTone(1200, 0.11, 'square', 0.08, 0.10)
+      }
+
+      setTimeout(() => {
+        audioContext.close()
+      }, 700)
     }
 
-    /* PULSE
-       kurzer, cleaner MTB-App-Ton
-    */
-    if (sound === 'pulse') {
-      playTone(
-        520,
-        0.16,
-        'sine',
-        0.13
-      )
-
-      playTone(
-        780,
-        0.18,
-        'sine',
-        0.10,
-        0.07
-      )
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().then(startSound)
+    } else {
+      startSound()
     }
-
-    /* ECHO
-       weicher Doppelton
-    */
-    if (sound === 'echo') {
-      playTone(
-        660,
-        0.18,
-        'sine',
-        0.11
-      )
-
-      playTone(
-        660,
-        0.18,
-        'sine',
-        0.075,
-        0.14
-      )
-    }
-
-    /* BOOST
-       etwas tiefer und kräftiger
-    */
-    if (sound === 'boost') {
-      playTone(
-        330,
-        0.16,
-        'triangle',
-        0.15
-      )
-
-      playTone(
-        495,
-        0.20,
-        'triangle',
-        0.12,
-        0.08
-      )
-    }
-
-    /* SIGNAL
-       moderner kurzer elektronischer Ton
-    */
-    if (sound === 'signal') {
-      playTone(
-        880,
-        0.09,
-        'square',
-        0.055
-      )
-
-      playTone(
-        1175,
-        0.12,
-        'square',
-        0.045,
-        0.09
-      )
-    }
-
-    setTimeout(() => {
-      audioContext.close()
-    }, 500)
 
   } catch (error) {
     console.error(
@@ -174,7 +117,6 @@ function playNotificationSound(sound = 'pulse') {
     )
   }
 }
-
 
 function playSelectedNotificationSound() {
   const enabled =
@@ -976,8 +918,6 @@ const checkForNewMessage = async () => {
       return
     }
 
-    playSelectedNotificationSound()
-
     setMessageNotification({
       id: notificationId,
       type: 'friend',
@@ -1056,8 +996,6 @@ const checkForNewMessage = async () => {
       .single()
 
     if (cancelled) return
-
-    playSelectedNotificationSound()
 
     setMessageNotification({
       id: notificationId,
