@@ -7301,3 +7301,47 @@ body::after {
   }
 
 }
+/* =====================================================
+   BENACHRICHTIGUNGSTON – MOBILE SCROLL
+===================================================== */
+
+.notification-sound-list {
+  max-height: 260px;
+  overflow-y: auto;
+
+  padding-right: 5px;
+
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+
+  scrollbar-width: thin;
+}
+
+/* Schmale Scrollbar */
+.notification-sound-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.notification-sound-list::-webkit-scrollbar-track {
+  background: rgba(255,255,255,.03);
+  border-radius: 10px;
+}
+
+.notification-sound-list::-webkit-scrollbar-thumb {
+  background: rgba(165,245,26,.45);
+  border-radius: 10px;
+}
+
+/* Auf dem Handy etwas mehr Platz */
+@media (max-width: 600px) {
+
+  .notification-sound-list {
+    max-height: 245px;
+    padding-right: 4px;
+  }
+
+  .notification-sound-option {
+    min-height: 62px;
+  }
+}
