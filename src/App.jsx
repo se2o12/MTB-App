@@ -3319,61 +3319,69 @@ return (
               ) : (
                 <div className="community-friend-list">
 
-                  {friends.map((friend) => {
+  {friends.map((friend, index) => {
 
-                    const selected =
-                      selectedFriends.includes(
-                        friend.id
-                      )
+    const selected =
+      selectedFriends.includes(friend.id)
 
-                    return (
-                      <button
-                        type="button"
-                        key={friend.id}
-                        className={
-                          `community-friend-option ${
-                            selected
-                              ? 'selected'
-                              : ''
-                          }`
-                        }
-                        onClick={() =>
-                          toggleCommunityFriend(
-                            friend.id
-                          )
-                        }
-                      >
+    return (
+      <button
+        type="button"
+        key={friend.id}
+        className={`community-friend-option community-user-color-${index % 8} ${
+          selected ? 'selected' : ''
+        }`}
+        onClick={() =>
+          toggleCommunityFriend(friend.id)
+        }
+      >
 
-                        <div className="friend-avatar">
+        <div className="community-friend-left">
 
-                          {friend.image ? (
-                            <img
-                              src={friend.image}
-                              alt=""
-                            />
-                          ) : (
-                            <span>
-                              {(friend.name || '?')
-                                .charAt(0)
-                                .toUpperCase()}
-                            </span>
-                          )}
+          <div className="friend-avatar">
 
-                        </div>
+            {friend.image ? (
+              <img
+                src={friend.image}
+                alt=""
+              />
+            ) : (
+              <span>
+                {(friend.name || '?')
+                  .charAt(0)
+                  .toUpperCase()}
+              </span>
+            )}
 
-                        <span>
-                          {friend.name}
-                        </span>
+          </div>
 
-                        <span className="community-check">
-                          {selected ? '✓' : ''}
-                        </span>
+          <div className="community-friend-info">
 
-                      </button>
-                    )
-                  })}
+            <strong>
+              {friend.name}
+            </strong>
 
-                </div>
+            <small>
+              {friend.rank || 'Rider'}
+            </small>
+
+          </div>
+
+        </div>
+
+        <div
+          className={`community-select-box ${
+            selected ? 'selected' : ''
+          }`}
+        >
+          {selected && '✓'}
+        </div>
+
+      </button>
+    )
+  })}
+
+</div>
               )}
 
             </div>
@@ -3414,61 +3422,403 @@ return (
 
 
 function CommunityPage({ community, onBack }) {
+  const [messages, setMessages] = useState([])
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [memberProfiles, setMemberProfiles] = useState({})
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      setCurrentUser(user)
+    }
+
+    getCurrentUser()
+  }, [])
+
+  const loadMembers = async () => {
+    if (!community?.id) return
+
+    const { data, error } = await supabase
+      .from('community_members')
+      .select('user_id, role')
+      .eq('community_id', community.id)
+
+    if (error) {
+      console.error(
+        'Community-Mitglieder laden:',
+        error
+      )
+      return
+    }
+
+    const userIds = (data || []).map(
+      (member) => member.user_id
+    )
+
+    if (userIds.length === 0) {
+      setMemberProfiles({})
+      return
+    }
+
+    const { data: profiles, error: profileError } =
+      await supabase
+        .from('profiles')
+        .select(
+          'id, name, image, level, rank'
+        )
+        .in('id', userIds)
+
+    if (profileError) {
+      console.error(
+        'Community-Profile laden:',
+        profileError
+      )
+      return
+    }
+
+    const profileMap = {}
+
+    ;(profiles || []).forEach((profile) => {
+      profileMap[profile.id] = profile
+    })
+
+    setMemberProfiles(profileMap)
+  }
+
+  const loadMessages = async () => {
+    if (!community?.id) return
+
+    const { data, error } = await supabase
+      .from('community_messages')
+      .select('*')
+      .eq('community_id', community.id)
+      .order('created_at', {
+        ascending: true,
+      })
+
+    if (error) {
+      console.error(
+        'Community-Nachrichten laden:',
+        error
+      )
+      setMessages([])
+    } else {
+      setMessages(data || [])
+    }
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    if (!community?.id) return
+
+    loadMembers()
+    loadMessages()
+
+    const interval = setInterval(() => {
+      loadMessages()
+    }, 3000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [community?.id])
+
+  const sendMessage = async () => {
+    const text = message.trim()
+
+    if (
+      !text ||
+      sending ||
+      !community?.id
+    ) {
+      return
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    setSending(true)
+
+    const { error } = await supabase
+      .from('community_messages')
+      .insert({
+        community_id: community.id,
+        sender_id: user.id,
+        content: text,
+      })
+
+    if (error) {
+      console.error(
+        'Community-Nachricht senden:',
+        error
+      )
+
+      alert(
+        'Nachricht konnte nicht gesendet werden: ' +
+          error.message
+      )
+    } else {
+      setMessage('')
+      await loadMessages()
+    }
+
+    setSending(false)
+  }
+
+  const handleKeyDown = (event) => {
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey
+    ) {
+      event.preventDefault()
+      sendMessage()
+    }
+  }
+
+  const getUserColor = (userId) => {
+    if (!userId) {
+      return '#a5f51a'
+    }
+
+    let hash = 0
+
+    for (let i = 0; i < userId.length; i++) {
+      hash =
+        userId.charCodeAt(i) +
+        ((hash << 5) - hash)
+    }
+
+    const colors = [
+      '#a5f51a',
+      '#61a7ff',
+      '#b875ff',
+      '#ff6b8a',
+      '#ffad4d',
+      '#35e0c2',
+      '#f5e85b',
+      '#ff6bdf',
+    ]
+
+    return colors[
+      Math.abs(hash) % colors.length
+    ]
+  }
+
+  const getProfile = (userId) => {
+    return memberProfiles[userId] || null
+  }
+
   return (
     <Page
-      title={community.name}
+      title={community?.name || 'Community'}
       eyebrow="COMMUNITY"
     >
 
-      <button
-        className="community-back-button"
-        onClick={onBack}
-      >
-        ← Zurück zu Freunde
-      </button>
+      <div className="community-chat-page">
+
+        {/* =====================================================
+           HEADER
+        ===================================================== */}
+
+        <div className="community-chat-header">
+
+          <button
+            className="chat-back-button"
+            onClick={onBack}
+          >
+            ← Zurück
+          </button>
+
+          <div className="community-chat-user">
+
+            <div className="large-avatar">
+
+              {community?.image ? (
+                <img
+                  src={community.image}
+                  alt=""
+                />
+              ) : (
+                '👥'
+              )}
+
+            </div>
+
+            <div>
+
+              <strong>
+                {community?.name}
+              </strong>
+
+              <span>
+                Community · gemeinsamer Chat
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
 
 
-      <div className="community-page-card">
+        {/* =====================================================
+           NACHRICHTEN
+        ===================================================== */}
 
-        <div className="community-page-image">
+        <div className="community-chat-messages">
 
-          {community.image ? (
-            <img
-              src={community.image}
-              alt=""
-            />
+          {loading ? (
+            <div className="chat-info">
+              Nachrichten werden geladen...
+            </div>
+
+          ) : messages.length === 0 ? (
+
+            <div className="chat-empty">
+
+              <span>💬</span>
+
+              <strong>
+                Noch keine Nachrichten
+              </strong>
+
+              <small>
+                Schreibe die erste Nachricht
+                in dieser Community.
+              </small>
+
+            </div>
+
           ) : (
-            <span>👥</span>
+
+            messages.map((item) => {
+
+              const isOwn =
+                item.sender_id ===
+                currentUser?.id
+
+              const profile =
+                getProfile(item.sender_id)
+
+              const userColor =
+                getUserColor(
+                  item.sender_id
+                )
+
+              return (
+                <div
+                  key={item.id}
+                  className={
+                    isOwn
+                      ? 'community-message-row own'
+                      : 'community-message-row'
+                  }
+                >
+
+                  {!isOwn && (
+                    <div className="community-message-avatar">
+
+                      {profile?.image ? (
+                        <img
+                          src={profile.image}
+                          alt=""
+                        />
+                      ) : (
+                        <span>
+                          {(profile?.name || '?')
+                            .charAt(0)
+                            .toUpperCase()}
+                        </span>
+                      )}
+
+                    </div>
+                  )}
+
+
+                  <div
+                    className="community-message-content"
+                  >
+
+                    {!isOwn && (
+                      <strong
+                        style={{
+                          color: userColor,
+                        }}
+                      >
+                        {profile?.name ||
+                          'Unbekannter Rider'}
+                      </strong>
+                    )}
+
+                    <div
+                      className={
+                        isOwn
+                          ? 'community-message-bubble own'
+                          : 'community-message-bubble'
+                      }
+                      style={
+                        !isOwn
+                          ? {
+                              borderLeft:
+                                `3px solid ${userColor}`,
+                            }
+                          : undefined
+                      }
+                    >
+                      {item.content}
+                    </div>
+
+                  </div>
+
+                </div>
+              )
+            })
+
           )}
 
         </div>
 
-        <h2>
-          {community.name}
-        </h2>
 
-        <p>
-          {community.description ||
-            'Keine Beschreibung'}
-        </p>
+        {/* =====================================================
+           EINGABE
+        ===================================================== */}
 
-      </div>
+        <div className="community-chat-input-area">
 
+          <textarea
+            value={message}
+            onChange={(event) =>
+              setMessage(
+                event.target.value
+              )
+            }
+            onKeyDown={handleKeyDown}
+            placeholder="Nachricht schreiben..."
+            rows={1}
+          />
 
-      <div className="community-chat-placeholder">
+          <button
+            className="chat-send-button"
+            onClick={sendMessage}
+            disabled={
+              sending ||
+              !message.trim()
+            }
+          >
+            ➤
+          </button>
 
-        <div className="community-chat-icon">
-          💬
         </div>
-
-        <h3>
-          Community-Chat kommt als Nächstes
-        </h3>
-
-        <p>
-          Hier wird später der gemeinsame
-          Community-Chat erscheinen.
-        </p>
 
       </div>
 
