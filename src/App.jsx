@@ -2552,8 +2552,6 @@ function ChatPage({ friend, onBack }) {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
-  const previousMessageCount = useRef(0)
-  const hasLoadedMessages = useRef(false)
 
   useEffect(() => {
   const getCurrentUser = async () => {
@@ -2586,33 +2584,14 @@ function ChatPage({ friend, onBack }) {
         ascending: true,
       })
 
-    if (error) {
+        if (error) {
       console.error('Nachrichten laden:', error)
       setMessages([])
     } else {
-  const newMessages = data || []
+      const newMessages = data || []
 
-  if (
-    hasLoadedMessages.current &&
-    newMessages.length >
-      previousMessageCount.current
-  ) {
-    const newestMessage =
-      newMessages[newMessages.length - 1]
-
-    if (
-  newestMessage?.sender_id !== user.id
-) {
-  playSelectedNotificationSound()
-}
-
-  previousMessageCount.current =
-    newMessages.length
-
-  hasLoadedMessages.current = true
-
-  setMessages(newMessages)
-}
+      setMessages(newMessages)
+    }
 
     setLoading(false)
   }
@@ -2775,7 +2754,7 @@ function ChatPage({ friend, onBack }) {
       </div>
     </Page>
   )
-}}
+}
 
 /* =====================================================
    FREUNDE
