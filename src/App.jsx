@@ -813,54 +813,140 @@ function App() {
 
   let cancelled = false
 
-  const checkForNewMessage = async () => {
-    const { data, error } = await supabase
-      .from('messages')
-      .select(
-        'id, sender_id, receiver_id, content, created_at'
-      )
-      .eq('receiver_id', session.user.id)
-      .order('created_at', {
-        ascending: false,
-      })
-      .limit(1)
+const checkForNewMessage = async () => {
+  const notificationsEnabled =
+    localStorage.getItem(
+      'mtb_notifications_enabled'
+    ) === 'true'
 
-    if (cancelled || error) {
-      if (error) {
-        console.error(
-          'Nachrichten-Benachrichtigung:',
-          error
-        )
-      }
+  if (!notificationsEnabled) {
+    return
+  }
 
-      return
-    }
+  // =========================
+  // FREUNDES-NACHRICHTEN
+  // =========================
 
-    const newestMessage = data?.[0]
+  const {
+    data: friendMessages,
+    error: friendError,
+  } = await supabase
+    .from('messages')
+    .select(
+      'id, sender_id, receiver_id, content, created_at'
+    )
+    .eq('receiver_id', session.user.id)
+    .order('created_at', {
+      ascending: false,
+    })
+    .limit(1)
 
-    if (!newestMessage) return
+  if (cancelled) return
 
-    // Beim ersten Laden nur die aktuelle Nachricht merken.
-    // Dadurch gibt es beim Öffnen der App keinen falschen Ton.
-    if (!notificationInitialized.current) {
-      lastNotificationMessageId.current =
-        newestMessage.id
+  if (friendError) {
+    console.error(
+      'Nachrichten-Benachrichtigung:',
+      friendError
+    )
+  }
 
-      notificationInitialized.current = true
-      return
-    }
+  // =========================
+  // COMMUNITY-NACHRICHTEN
+  // =========================
 
-    // Nichts Neues
-    if (
-      newestMessage.id ===
-      lastNotificationMessageId.current
-    ) {
-      return
-    }
+  const {
+    data: communityMessages,
+    error: communityError,
+  } = await supabase
+    .from('community_messages')
+    .select(
+      'id, community_id, sender_id, content, created_at'
+    )
+    .order('created_at', {
+      ascending: false,
+    })
+    .limit(1)
 
+  if (cancelled) return
+
+  if (communityError) {
+    console.error(
+      'Community-Benachrichtigung:',
+      communityError
+    )
+  }
+
+  const newestFriendMessage =
+    friendMessages?.[0]
+
+  const newestCommunityMessage =
+    communityMessages?.[0]
+
+  // Beide Nachrichten zusammenführen
+  const allMessages = [
+    newestFriendMessage
+      ? {
+          ...newestFriendMessage,
+          notificationType: 'friend',
+        }
+      : null,
+
+    newestCommunityMessage
+      ? {
+          ...newestCommunityMessage,
+          notificationType: 'community',
+        }
+      : null,
+  ].filter(Boolean)
+
+  if (allMessages.length === 0) {
+    return
+  }
+
+  // Neueste Nachricht bestimmen
+  allMessages.sort(
+    (a, b) =>
+      new Date(b.created_at) -
+      new Date(a.created_at)
+  )
+
+  const newestMessage = allMessages[0]
+
+  // Beim ersten Laden nur aktuelle Nachricht merken
+  if (!notificationInitialized.current) {
     lastNotificationMessageId.current =
+      newestMessage.notificationType +
+      '-' +
       newestMessage.id
 
+    notificationInitialized.current = true
+    return
+  }
+
+  const notificationId =
+    newestMessage.notificationType +
+    '-' +
+    newestMessage.id
+
+  // Nichts Neues
+  if (
+    notificationId ===
+    lastNotificationMessageId.current
+  ) {
+    return
+  }
+
+  lastNotificationMessageId.current =
+    notificationId
+
+  // =========================
+  // FREUND
+  // =========================
+
+  if (
+    newestMessage.notificationType ===
+    'friend'
+  ) {
     // Eigene Nachrichten niemals melden
     if (
       newestMessage.sender_id ===
@@ -869,29 +955,20 @@ function App() {
       return
     }
 
-    // Wenn Benachrichtigungen ausgeschaltet sind:
-    // gar nichts machen.
-    const notificationsEnabled =
-      localStorage.getItem(
-        'mtb_notifications_enabled'
-      ) === 'true'
-
-    if (!notificationsEnabled) {
-      return
-    }
-
-    // Profil des Absenders laden
-    const { data: senderProfile } =
-      await supabase
-        .from('profiles')
-        .select('id, name, image')
-        .eq('id', newestMessage.sender_id)
-        .single()
+    const {
+      data: senderProfile,
+    } = await supabase
+      .from('profiles')
+      .select('id, name, image')
+      .eq(
+        'id',
+        newestMessage.sender_id
+      )
+      .single()
 
     if (cancelled) return
 
-    // Wenn wir bereits genau mit diesem Freund chatten,
-    // brauchen wir kein zusätzliches Banner.
+    // Wenn wir bereits mit diesem Freund chatten
     if (
       activeChat?.id ===
       newestMessage.sender_id
@@ -902,8 +979,10 @@ function App() {
     playSelectedNotificationSound()
 
     setMessageNotification({
-      id: newestMessage.id,
-      senderId: newestMessage.sender_id,
+      id: notificationId,
+      type: 'friend',
+      senderId:
+        newestMessage.sender_id,
       senderName:
         senderProfile?.name ||
         'Jemand',
@@ -912,21 +991,110 @@ function App() {
       content:
         newestMessage.content || '',
     })
+  }
 
-    // Banner nach 6 Sekunden automatisch schließen
-    setTimeout(() => {
-      setMessageNotification((current) => {
+  // =========================
+  // COMMUNITY
+  // =========================
+
+  if (
+    newestMessage.notificationType ===
+    'community'
+  ) {
+    // Eigene Community-Nachrichten niemals melden
+    if (
+      newestMessage.sender_id ===
+      session.user.id
+    ) {
+      return
+    }
+
+    // Prüfen, ob der User überhaupt Mitglied der Community ist
+    const {
+      data: membership,
+    } = await supabase
+      .from('community_members')
+      .select('id')
+      .eq(
+        'community_id',
+        newestMessage.community_id
+      )
+      .eq(
+        'user_id',
+        session.user.id
+      )
+      .maybeSingle()
+
+    if (cancelled) return
+
+    // Keine Benachrichtigung für Communities,
+    // in denen wir nicht Mitglied sind
+    if (!membership) {
+      return
+    }
+
+    const {
+      data: senderProfile,
+    } = await supabase
+      .from('profiles')
+      .select('id, name, image')
+      .eq(
+        'id',
+        newestMessage.sender_id
+      )
+      .single()
+
+    const {
+      data: community,
+    } = await supabase
+      .from('communities')
+      .select('id, name')
+      .eq(
+        'id',
+        newestMessage.community_id
+      )
+      .single()
+
+    if (cancelled) return
+
+    playSelectedNotificationSound()
+
+    setMessageNotification({
+      id: notificationId,
+      type: 'community',
+      senderId:
+        newestMessage.sender_id,
+      senderName:
+        senderProfile?.name ||
+        'Jemand',
+      senderImage:
+        senderProfile?.image || null,
+      communityId:
+        newestMessage.community_id,
+      communityName:
+        community?.name ||
+        'Community',
+      content:
+        newestMessage.content || '',
+    })
+  }
+
+  // Banner nach 6 Sekunden schließen
+  setTimeout(() => {
+    setMessageNotification(
+      (current) => {
         if (
           current?.id ===
-          newestMessage.id
+          notificationId
         ) {
           return null
         }
 
         return current
-      })
-    }, 6000)
-  }
+      }
+    )
+  }, 6000)
+}
 
   checkForNewMessage()
 
@@ -1058,16 +1226,36 @@ function App() {
     type="button"
     className="message-notification"
     onClick={() => {
-      const friend = {
-        id: messageNotification.senderId,
-        name: messageNotification.senderName,
-        image: messageNotification.senderImage,
-      }
+  if (
+    messageNotification.type ===
+    'community'
+  ) {
+    setMessageNotification(null)
 
-      setMessageNotification(null)
-      setActivePage('friends')
-      setActiveChat(friend)
-    }}
+    // Community öffnen
+    setActivePage('friends')
+
+    // Falls deine CommunityPage über activeCommunity
+    // geöffnet wird, hier die Community setzen.
+    setActiveCommunity({
+      id: messageNotification.communityId,
+      name:
+        messageNotification.communityName,
+    })
+
+    return
+  }
+
+  const friend = {
+    id: messageNotification.senderId,
+    name: messageNotification.senderName,
+    image: messageNotification.senderImage,
+  }
+
+  setMessageNotification(null)
+  setActivePage('friends')
+  setActiveChat(friend)
+}}
   >
     <div className="message-notification-avatar">
       {messageNotification.senderImage ? (
@@ -1088,8 +1276,10 @@ function App() {
       </strong>
 
       <span>
-        hat dir eine Nachricht geschrieben
-      </span>
+  {messageNotification.type === 'community'
+    ? `hat in ${messageNotification.communityName} geschrieben`
+    : 'hat dir eine Nachricht geschrieben'}
+</span>
 
       {messageNotification.content && (
         <small>
