@@ -1461,147 +1461,285 @@ const checkForNewMessage = async () => {
    LOGIN / REGISTRIERUNG
 ===================================================== */
 
+/* =====================================================
+   LOGIN / REGISTRIERUNG
+   E-MAIL + EINMAL-CODE
+===================================================== */
+
 function AuthPage() {
-  const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
+  const [step, setStep] = useState('email')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  const handleSubmit = async (event) => {
+  const sendCode = async (event) => {
     event.preventDefault()
+
+    const cleanEmail = email.trim().toLowerCase()
+
     setMessage('')
 
-    if (!email.trim() || !password) {
-      setMessage(
-        'Bitte E-Mail und Passwort eingeben.'
-      )
+    if (!cleanEmail) {
+      setMessage('Bitte deine E-Mail-Adresse eingeben.')
       return
     }
 
     setLoading(true)
 
-    if (mode === 'register') {
-      const { error } =
-        await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-        })
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: {
+        shouldCreateUser: true,
+      },
+    })
 
-      if (error) {
-        setMessage(error.message)
-      } else {
-        setMessage(
-          'Account erstellt! Falls E-Mail-Bestätigung aktiviert ist, prüfe deine E-Mails.'
-        )
-      }
+    if (error) {
+      console.error('OTP senden:', error)
+
+      setMessage(
+        'Code konnte nicht gesendet werden: ' +
+          error.message
+      )
     } else {
-      const { error } =
-        await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        })
-
-      if (error) {
-        setMessage(
-          'Login fehlgeschlagen: ' +
-            error.message
-        )
-      }
+      setStep('code')
+      setMessage(
+        'Wir haben dir einen Code per E-Mail geschickt.'
+      )
     }
 
     setLoading(false)
   }
 
+  const verifyCode = async (event) => {
+    event.preventDefault()
+
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanCode = code.trim()
+
+    setMessage('')
+
+    if (!cleanCode) {
+      setMessage('Bitte den Code eingeben.')
+      return
+    }
+
+    setLoading(true)
+
+    const { data, error } =
+      await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanCode,
+        type: 'email',
+      })
+
+    if (error) {
+      console.error('OTP bestätigen:', error)
+
+      setMessage(
+        'Der Code ist ungültig oder abgelaufen.'
+      )
+
+      setLoading(false)
+      return
+    }
+
+    if (data.session) {
+      console.log('Login erfolgreich')
+    }
+
+    setLoading(false)
+  }
+
+  const resendCode = async () => {
+    const cleanEmail = email.trim().toLowerCase()
+
+    if (!cleanEmail) return
+
+    setLoading(true)
+    setMessage('')
+
+    const { error } =
+      await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          shouldCreateUser: true,
+        },
+      })
+
+    if (error) {
+      setMessage(
+        'Code konnte nicht erneut gesendet werden: ' +
+          error.message
+      )
+    } else {
+      setMessage(
+        'Ein neuer Code wurde an deine E-Mail gesendet.'
+      )
+    }
+
+    setLoading(false)
+  }
+
+  const changeEmail = () => {
+    setStep('email')
+    setCode('')
+    setMessage('')
+  }
+
   return (
     <div className="auth-screen">
       <div className="auth-card">
+
         <div className="setup-logo">
           <span>⌁</span>
           MTB
         </div>
 
         <div className="auth-badge">
-          🚵
+          {step === 'email' ? '✉️' : '🔐'}
         </div>
 
-        <h1>
-          {mode === 'login'
-            ? 'Willkommen zurück!'
-            : 'Dein MTB-Account'}
-        </h1>
+        {step === 'email' ? (
+          <>
+            <h1>
+              Willkommen! 👋
+            </h1>
 
-        <p className="setup-description">
-          {mode === 'login'
-            ? 'Melde dich an und starte dein nächstes Abenteuer.'
-            : 'Erstelle deinen kostenlosen Account.'}
+            <p className="setup-description">
+              Gib deine E-Mail-Adresse ein und
+              wir schicken dir einen Anmeldecode.
+            </p>
+
+            <form onSubmit={sendCode}>
+
+              <label className="input-label">
+                E-MAIL
+              </label>
+
+              <input
+                className="name-input"
+                type="email"
+                placeholder="deine@email.de"
+                value={email}
+                autoComplete="email"
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
+                autoFocus
+              />
+
+              {message && (
+                <div className="auth-message">
+                  {message}
+                </div>
+              )}
+
+              <button
+                className="create-button"
+                type="submit"
+                disabled={loading}
+              >
+                {loading
+                  ? 'CODE WIRD GESENDET...'
+                  : 'CODE ANFORDERN'}
+
+                {!loading && (
+                  <span>→</span>
+                )}
+              </button>
+
+            </form>
+          </>
+        ) : (
+          <>
+            <h1>
+              Code eingeben 🔐
+            </h1>
+
+            <p className="setup-description">
+              Wir haben einen Anmeldecode an
+              <strong> {email}</strong> geschickt.
+            </p>
+
+            <form onSubmit={verifyCode}>
+
+              <label className="input-label">
+                ANMELDECODE
+              </label>
+
+              <input
+                className="name-input auth-code-input"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="123456"
+                value={code}
+                maxLength={6}
+                onChange={(event) =>
+                  setCode(
+                    event.target.value.replace(
+                      /\D/g,
+                      ''
+                    )
+                  )
+                }
+                autoFocus
+              />
+
+              {message && (
+                <div className="auth-message">
+                  {message}
+                </div>
+              )}
+
+              <button
+                className="create-button"
+                type="submit"
+                disabled={
+                  loading ||
+                  code.length < 6
+                }
+              >
+                {loading
+                  ? 'WIRD ANGEMELDET...'
+                  : 'ANMELDEN'}
+
+                {!loading && (
+                  <span>→</span>
+                )}
+              </button>
+
+            </form>
+
+            <div className="auth-code-actions">
+
+              <button
+                className="auth-switch"
+                type="button"
+                onClick={resendCode}
+                disabled={loading}
+              >
+                Code erneut senden
+              </button>
+
+              <button
+                className="auth-switch"
+                type="button"
+                onClick={changeEmail}
+                disabled={loading}
+              >
+                ← Andere E-Mail verwenden
+              </button>
+
+            </div>
+          </>
+        )}
+
+        <p className="privacy-note">
+          Kostenlos anmelden · Kein Passwort notwendig
         </p>
 
-        <form onSubmit={handleSubmit}>
-          <label className="input-label">
-            E-MAIL
-          </label>
-
-          <input
-            className="name-input"
-            type="email"
-            placeholder="deine@email.de"
-            value={email}
-            onChange={(event) =>
-              setEmail(event.target.value)
-            }
-          />
-
-          <label className="input-label auth-password-label">
-            PASSWORT
-          </label>
-
-          <input
-            className="name-input"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(event) =>
-              setPassword(event.target.value)
-            }
-          />
-
-          {message && (
-            <div className="auth-message">
-              {message}
-            </div>
-          )}
-
-          <button
-            className="create-button"
-            type="submit"
-            disabled={loading}
-          >
-            {loading
-              ? 'BITTE WARTEN...'
-              : mode === 'login'
-                ? 'EINLOGGEN'
-                : 'ACCOUNT ERSTELLEN'}
-
-            {!loading && <span>→</span>}
-          </button>
-        </form>
-
-        <button
-          className="auth-switch"
-          onClick={() => {
-            setMode(
-              mode === 'login'
-                ? 'register'
-                : 'login'
-            )
-            setMessage('')
-          }}
-        >
-          {mode === 'login'
-            ? 'Noch keinen Account? Registrieren'
-            : 'Du hast bereits einen Account? Einloggen'}
-        </button>
       </div>
     </div>
   )
@@ -1614,7 +1752,22 @@ function AuthPage() {
 function ProfileSetup({ onComplete }) {
   const [name, setName] = useState('')
   const [image, setImage] = useState(null)
+  const [cropImage, setCropImage] = useState(null)
+  const [cropPosition, setCropPosition] = useState({
+    x: 0,
+    y: 0,
+  })
+  const [zoom, setZoom] = useState(1)
+
   const fileInput = useRef(null)
+  const cropAreaRef = useRef(null)
+  const dragging = useRef(false)
+  const dragStart = useRef({ x: 0, y: 0 })
+  const startPosition = useRef({ x: 0, y: 0 })
+
+  /* ---------------------------------------------
+     BILD AUSWÄHLEN
+  --------------------------------------------- */
 
   const chooseImage = (event) => {
     const file = event.target.files?.[0]
@@ -1624,11 +1777,238 @@ function ProfileSetup({ onComplete }) {
     const reader = new FileReader()
 
     reader.onload = () => {
-      setImage(reader.result)
+      setCropImage(reader.result)
+      setCropPosition({
+        x: 0,
+        y: 0,
+      })
+      setZoom(1)
     }
 
     reader.readAsDataURL(file)
+
+    // Damit dasselbe Bild direkt nochmal ausgewählt
+    // werden kann.
+    event.target.value = ''
   }
+
+  /* ---------------------------------------------
+     CROP ABBRECHEN
+  --------------------------------------------- */
+
+  const cancelCrop = () => {
+    setCropImage(null)
+    setCropPosition({
+      x: 0,
+      y: 0,
+    })
+    setZoom(1)
+  }
+
+  /* ---------------------------------------------
+     DRAG START
+  --------------------------------------------- */
+
+  const startDragging = (event) => {
+    event.preventDefault()
+
+    dragging.current = true
+
+    const point =
+      event.touches?.[0] || event
+
+    dragStart.current = {
+      x: point.clientX,
+      y: point.clientY,
+    }
+
+    startPosition.current = {
+      ...cropPosition,
+    }
+
+    window.addEventListener(
+      'mousemove',
+      dragImage
+    )
+
+    window.addEventListener(
+      'mouseup',
+      stopDragging
+    )
+
+    window.addEventListener(
+      'touchmove',
+      dragImage,
+      { passive: false }
+    )
+
+    window.addEventListener(
+      'touchend',
+      stopDragging
+    )
+  }
+
+  /* ---------------------------------------------
+     BILD VERSCHIEBEN
+  --------------------------------------------- */
+
+  const dragImage = (event) => {
+    if (!dragging.current) return
+
+    if (event.cancelable) {
+      event.preventDefault()
+    }
+
+    const point =
+      event.touches?.[0] || event
+
+    const deltaX =
+      point.clientX -
+      dragStart.current.x
+
+    const deltaY =
+      point.clientY -
+      dragStart.current.y
+
+    setCropPosition({
+      x:
+        startPosition.current.x +
+        deltaX,
+      y:
+        startPosition.current.y +
+        deltaY,
+    })
+  }
+
+  /* ---------------------------------------------
+     DRAG STOP
+  --------------------------------------------- */
+
+  const stopDragging = () => {
+    dragging.current = false
+
+    window.removeEventListener(
+      'mousemove',
+      dragImage
+    )
+
+    window.removeEventListener(
+      'mouseup',
+      stopDragging
+    )
+
+    window.removeEventListener(
+      'touchmove',
+      dragImage
+    )
+
+    window.removeEventListener(
+      'touchend',
+      stopDragging
+    )
+  }
+
+  /* ---------------------------------------------
+     CROPPED IMAGE ERSTELLEN
+  --------------------------------------------- */
+
+  const createCroppedImage = () => {
+    if (!cropImage) return
+
+    const img = new Image()
+
+    img.onload = () => {
+      const canvas =
+        document.createElement('canvas')
+
+      const size = 500
+
+      canvas.width = size
+      canvas.height = size
+
+      const ctx =
+        canvas.getContext('2d')
+
+      if (!ctx) return
+
+      /*
+       * Der Crop-Bereich entspricht ungefähr
+       * dem sichtbaren Kreis.
+       */
+      const cropSize =
+        cropAreaRef.current?.offsetWidth ||
+        280
+
+      const scale =
+        (size / cropSize) * zoom
+
+      const imageWidth =
+        img.naturalWidth * scale
+
+      const imageHeight =
+        img.naturalHeight * scale
+
+      const offsetX =
+        (size - imageWidth) / 2 +
+        cropPosition.x *
+          (size / cropSize)
+
+      const offsetY =
+        (size - imageHeight) / 2 +
+        cropPosition.y *
+          (size / cropSize)
+
+      ctx.clearRect(
+        0,
+        0,
+        size,
+        size
+      )
+
+      /*
+       * Kreis ausschneiden
+       */
+      ctx.save()
+
+      ctx.beginPath()
+
+      ctx.arc(
+        size / 2,
+        size / 2,
+        size / 2,
+        0,
+        Math.PI * 2
+      )
+
+      ctx.closePath()
+      ctx.clip()
+
+      ctx.drawImage(
+        img,
+        offsetX,
+        offsetY,
+        imageWidth,
+        imageHeight
+      )
+
+      ctx.restore()
+
+      setImage(
+        canvas.toDataURL(
+          'image/jpeg',
+          0.9
+        )
+      )
+
+      setCropImage(null)
+    }
+
+    img.src = cropImage
+  }
+
+  /* ---------------------------------------------
+     PROFIL ERSTELLEN
+  --------------------------------------------- */
 
   const createProfile = () => {
     if (!name.trim()) return
@@ -1642,26 +2022,143 @@ function ProfileSetup({ onComplete }) {
     })
   }
 
+  /* ---------------------------------------------
+     CROP EDITOR
+  --------------------------------------------- */
+
+  if (cropImage) {
+    return (
+      <div className="profile-crop-screen">
+
+        <div className="profile-crop-header">
+          <button
+            type="button"
+            onClick={cancelCrop}
+          >
+            ✕
+          </button>
+
+          <strong>
+            PROFILBILD ANPASSEN
+          </strong>
+
+          <button
+            type="button"
+            className="crop-done-top"
+            onClick={createCroppedImage}
+          >
+            ✓
+          </button>
+        </div>
+
+        <div
+          ref={cropAreaRef}
+          className="profile-crop-area"
+          onMouseDown={startDragging}
+          onTouchStart={startDragging}
+        >
+
+          <img
+            src={cropImage}
+            alt="Profilbild zuschneiden"
+            className="profile-crop-image"
+            draggable="false"
+            style={{
+              transform: `
+                translate(
+                  ${cropPosition.x}px,
+                  ${cropPosition.y}px
+                )
+                scale(${zoom})
+              `,
+            }}
+          />
+
+          {/* Dunkelgrünes Overlay */}
+          <div className="profile-crop-overlay" />
+
+          {/* Heller Kreis */}
+          <div className="profile-crop-circle">
+            <div className="profile-crop-circle-glow" />
+          </div>
+
+          <div className="profile-crop-hint">
+            BILD VERSCHIEBEN
+          </div>
+
+        </div>
+
+        {/* Zoom */}
+        <div className="profile-crop-controls">
+
+          <span>−</span>
+
+          <input
+            type="range"
+            min="1"
+            max="3"
+            step="0.01"
+            value={zoom}
+            onChange={(event) =>
+              setZoom(
+                Number(event.target.value)
+              )
+            }
+          />
+
+          <span>+</span>
+
+        </div>
+
+        <button
+          type="button"
+          className="profile-crop-confirm"
+          onClick={createCroppedImage}
+        >
+          ✓ PROFILBILD ÜBERNEHMEN
+        </button>
+
+      </div>
+    )
+  }
+
+  /* ---------------------------------------------
+     NORMALES PROFIL SETUP
+  --------------------------------------------- */
+
   return (
     <div className="setup-screen">
+
       <div className="setup-card">
+
         <div className="setup-logo">
           <span>⌁</span>
           MTB
         </div>
 
-        <div className="setup-icon">
+        <button
+          type="button"
+          className="profile-image-picker"
+          onClick={() =>
+            fileInput.current?.click()
+          }
+        >
           {image ? (
             <img
               src={image}
-              alt="Profilbild Vorschau"
+              alt="Profilbild"
             />
           ) : (
-            '👤'
+            <>
+              <span>👤</span>
+              <small>+</small>
+            </>
           )}
-        </div>
+        </button>
 
-        <h1>Willkommen! 👋</h1>
+        <h1>
+          Willkommen! 👋
+        </h1>
 
         <p className="setup-description">
           Erstelle dein MTB-Profil und starte
@@ -1692,6 +2189,7 @@ function ProfileSetup({ onComplete }) {
         />
 
         <button
+          type="button"
           className="image-button"
           onClick={() =>
             fileInput.current?.click()
@@ -1704,6 +2202,7 @@ function ProfileSetup({ onComplete }) {
         </button>
 
         <button
+          type="button"
           className="create-button"
           disabled={!name.trim()}
           onClick={createProfile}
@@ -1715,7 +2214,9 @@ function ProfileSetup({ onComplete }) {
         <p className="privacy-note">
           Dein Profil wird mit deinem Account gespeichert.
         </p>
+
       </div>
+
     </div>
   )
 }

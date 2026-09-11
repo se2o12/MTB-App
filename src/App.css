@@ -7539,3 +7539,485 @@ body::after {
     font-size: 10px;
   }
 }
+/* =====================================================
+   OTP LOGIN
+===================================================== */
+
+.auth-code-input {
+  text-align: center;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 10px;
+  padding-left: 18px;
+}
+
+.auth-code-input::placeholder {
+  letter-spacing: 8px;
+  opacity: 0.25;
+}
+
+.auth-code-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.auth-code-actions .auth-switch {
+  margin-top: 0;
+}
+
+.auth-code-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* =====================================================
+   PROFILBILD CROP EDITOR
+===================================================== */
+
+.profile-image-picker {
+  position: relative;
+
+  width: 118px;
+  height: 118px;
+
+  margin: 0 auto 24px;
+
+  padding: 0;
+
+  border-radius: 50%;
+
+  border: 2px solid rgba(165, 245, 26, 0.8);
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(165, 245, 26, 0.12),
+      rgba(0, 0, 0, 0.5)
+    );
+
+  overflow: hidden;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 0 25px rgba(165, 245, 26, 0.12),
+    inset 0 0 25px rgba(165, 245, 26, 0.08);
+}
+
+.profile-image-picker img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  display: block;
+}
+
+.profile-image-picker > span {
+  font-size: 42px;
+  opacity: 0.8;
+}
+
+.profile-image-picker small {
+  position: absolute;
+
+  right: 7px;
+  bottom: 7px;
+
+  width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #a5f51a;
+  color: #071000;
+
+  font-size: 22px;
+  font-weight: 900;
+
+  box-shadow:
+    0 0 15px rgba(165, 245, 26, 0.45);
+}
+
+
+/* =====================================================
+   CROP SCREEN
+===================================================== */
+
+.profile-crop-screen {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9999;
+
+  display: flex;
+  flex-direction: column;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #10210b 0%,
+      #050805 45%,
+      #020302 100%
+    );
+
+  color: white;
+}
+
+
+/* HEADER */
+
+.profile-crop-header {
+  height: 70px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 22px;
+
+  background:
+    rgba(3, 8, 3, 0.92);
+
+  border-bottom:
+    1px solid rgba(165, 245, 26, 0.12);
+
+  backdrop-filter: blur(14px);
+}
+
+.profile-crop-header strong {
+  font-size: 13px;
+
+  letter-spacing: 2px;
+
+  color: #eaffd2;
+}
+
+.profile-crop-header button {
+  width: 42px;
+  height: 42px;
+
+  border: 0;
+
+  border-radius: 50%;
+
+  background:
+    rgba(255, 255, 255, 0.06);
+
+  color: white;
+
+  font-size: 21px;
+
+  cursor: pointer;
+}
+
+.profile-crop-header button:hover {
+  background:
+    rgba(165, 245, 26, 0.12);
+}
+
+.profile-crop-header .crop-done-top {
+  color: #a5f51a;
+
+  font-size: 26px;
+}
+
+
+/* =====================================================
+   CROP AREA
+===================================================== */
+
+.profile-crop-area {
+  position: relative;
+
+  width: min(100vw, 700px);
+
+  height: min(
+    72vh,
+    700px
+  );
+
+  margin: auto;
+
+  overflow: hidden;
+
+  touch-action: none;
+
+  user-select: none;
+
+  cursor: grab;
+
+  background:
+    #020402;
+}
+
+.profile-crop-area:active {
+  cursor: grabbing;
+}
+
+
+/* BILD */
+
+.profile-crop-image {
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: auto;
+  height: auto;
+
+  max-width: none;
+  max-height: none;
+
+  transform-origin: center;
+
+  pointer-events: none;
+
+  user-select: none;
+}
+
+
+/* =====================================================
+   DUNKELGRÜNES OVERLAY
+===================================================== */
+
+.profile-crop-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+    rgba(2, 18, 4, 0.67);
+
+  box-shadow:
+    inset 0 0 100px
+    rgba(0, 0, 0, 0.8);
+}
+
+
+/* =====================================================
+   KREIS
+===================================================== */
+
+.profile-crop-circle {
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: min(
+    72vw,
+    360px
+  );
+
+  height: min(
+    72vw,
+    360px
+  );
+
+  transform: translate(-50%, -50%);
+
+  border-radius: 50%;
+
+  border:
+    3px solid rgba(
+      235,
+      255,
+      210,
+      0.95
+    );
+
+  box-shadow:
+    0 0 0 9999px
+    rgba(1, 12, 2, 0.62),
+
+    0 0 25px
+    rgba(165, 245, 26, 0.18),
+
+    inset 0 0 18px
+    rgba(165, 245, 26, 0.08);
+
+  pointer-events: none;
+}
+
+.profile-crop-circle-glow {
+  position: absolute;
+
+  inset: -5px;
+
+  border-radius: 50%;
+
+  border:
+    1px solid
+    rgba(165, 245, 26, 0.55);
+
+  box-shadow:
+    0 0 22px
+    rgba(165, 245, 26, 0.2);
+}
+
+
+/* =====================================================
+   HINWEIS
+===================================================== */
+
+.profile-crop-hint {
+  position: absolute;
+
+  left: 50%;
+  bottom: 20px;
+
+  transform: translateX(-50%);
+
+  padding: 8px 15px;
+
+  border-radius: 20px;
+
+  background:
+    rgba(0, 0, 0, 0.55);
+
+  border:
+    1px solid
+    rgba(165, 245, 26, 0.15);
+
+  color:
+    rgba(235, 255, 210, 0.75);
+
+  font-size: 10px;
+
+  letter-spacing: 2px;
+
+  pointer-events: none;
+}
+
+
+/* =====================================================
+   ZOOM
+===================================================== */
+
+.profile-crop-controls {
+  display: flex;
+
+  align-items: center;
+
+  gap: 14px;
+
+  width: min(
+    90vw,
+    420px
+  );
+
+  margin: 0 auto;
+
+  padding: 15px 0;
+}
+
+.profile-crop-controls span {
+  width: 25px;
+
+  text-align: center;
+
+  color: #a5f51a;
+
+  font-size: 24px;
+
+  font-weight: 700;
+}
+
+.profile-crop-controls input {
+  flex: 1;
+
+  accent-color: #a5f51a;
+
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   ÜBERNEHMEN
+===================================================== */
+
+.profile-crop-confirm {
+  width: min(
+    90vw,
+    420px
+  );
+
+  margin: 0 auto 25px;
+
+  padding: 15px;
+
+  border: 1px solid
+    rgba(165, 245, 26, 0.5);
+
+  border-radius: 13px;
+
+  background:
+    rgba(165, 245, 26, 0.1);
+
+  color: #a5f51a;
+
+  font-size: 12px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.5px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 0 20px
+    rgba(165, 245, 26, 0.08);
+}
+
+.profile-crop-confirm:hover {
+  background:
+    rgba(165, 245, 26, 0.17);
+}
+
+
+/* =====================================================
+   HANDY
+===================================================== */
+
+@media (max-width: 600px) {
+
+  .profile-crop-header {
+    height: 62px;
+
+    padding: 0 14px;
+  }
+
+  .profile-crop-header strong {
+    font-size: 11px;
+  }
+
+  .profile-crop-area {
+    width: 100vw;
+
+    height: 68vh;
+  }
+
+  .profile-crop-circle {
+    width: 78vw;
+    height: 78vw;
+
+    max-width: 340px;
+    max-height: 340px;
+  }
+
+  .profile-crop-hint {
+    bottom: 15px;
+  }
+
+}
