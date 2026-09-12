@@ -8577,7 +8577,7 @@ body::after {
   color: #a5f51a;
 
   /* DICKERE BUCHSTABEN */
-  -webkit-text-stroke: 2.5px #d8ff8a;
+  -webkit-text-stroke: 4px #d8ff8a;
   paint-order: stroke fill;
 
   text-shadow:
