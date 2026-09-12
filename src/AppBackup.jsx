@@ -1279,8 +1279,15 @@ const checkForNewMessage = async () => {
     setMessageNotification(null)
 
     // Community öffnen
-    // Die Community-Auswahl selbst wird in FriendsPage verwaltet.
     setActivePage('friends')
+
+    // Falls deine CommunityPage über activeCommunity
+    // geöffnet wird, hier die Community setzen.
+    setActiveCommunity({
+      id: messageNotification.communityId,
+      name:
+        messageNotification.communityName,
+    })
 
     return
   }
@@ -1668,7 +1675,7 @@ function AuthPage() {
                 autoComplete="one-time-code"
                 placeholder="123456"
                 value={code}
-                maxLength={8}
+                maxLength={6}
                 onChange={(event) =>
                   setCode(
                     event.target.value.replace(
