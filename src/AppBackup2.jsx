@@ -1171,80 +1171,13 @@ const checkForNewMessage = async () => {
     loadProfile(session.user.id)
   }, [session])
 
-  const uploadProfileImage = async (imageData) => {
-    if (!imageData) return null
-
-    // Already-uploaded URL: nothing to upload again.
-    if (!imageData.startsWith('data:image/')) {
-      return imageData
-    }
-
-    try {
-      const response = await fetch(imageData)
-      const blob = await response.blob()
-
-      const filePath =
-        `${session.user.id}/avatar-${Date.now()}.jpg`
-
-      const { error: uploadError } =
-        await supabase.storage
-          .from('profile-images')
-          .upload(filePath, blob, {
-            contentType: 'image/jpeg',
-            cacheControl: '3600',
-            upsert: false,
-          })
-
-      if (uploadError) {
-        console.error(
-          'Profilbild-Upload fehlgeschlagen:',
-          uploadError
-        )
-        alert(
-          'Profilbild konnte nicht hochgeladen werden: ' +
-            uploadError.message
-        )
-        return null
-      }
-
-      const { data: publicUrlData } =
-        supabase.storage
-          .from('profile-images')
-          .getPublicUrl(filePath)
-
-      return publicUrlData.publicUrl
-    } catch (error) {
-      console.error(
-        'Profilbild-Upload fehlgeschlagen:',
-        error
-      )
-      alert(
-        'Profilbild konnte nicht hochgeladen werden.'
-      )
-      return null
-    }
-  }
-
   const saveProfile = async (newProfile) => {
     if (!session?.user) return
-
-    const uploadedImage =
-      await uploadProfileImage(newProfile.image)
-
-    // If a new image was selected but the upload failed,
-    // don't overwrite the existing profile picture.
-    if (
-      newProfile.image &&
-      newProfile.image.startsWith('data:image/') &&
-      !uploadedImage
-    ) {
-      return
-    }
 
     const profileData = {
       id: session.user.id,
       name: newProfile.name,
-      image: uploadedImage || null,
+      image: newProfile.image || null,
       points: newProfile.points ?? 0,
       level: newProfile.level ?? 1,
       rank: newProfile.rank ?? 'Trail Rider',
@@ -1735,7 +1668,7 @@ function AuthPage() {
                 autoComplete="one-time-code"
                 placeholder="123456"
                 value={code}
-                maxLength={6}
+                maxLength={8}
                 onChange={(event) =>
                   setCode(
                     event.target.value.replace(
@@ -5924,7 +5857,7 @@ function ProfileImageCropper({
   const viewportRef = useRef(null)
   const imageRef = useRef(null)
 
-  const pointers = useRef(new globalThis.Map())
+  const pointers = useRef(new Map())
   const lastPinchDistance = useRef(null)
   const dragStart = useRef(null)
 
@@ -6265,21 +6198,9 @@ function ProfileImageCropper({
   return (
     <div className="profile-crop-overlay">
 
-      <div
-        className="profile-crop-editor"
-        style={{
-          background: '#071a0d',
-          borderColor: '#163d22',
-        }}
-      >
+      <div className="profile-crop-editor">
 
-        <div
-          className="profile-crop-header"
-          style={{
-            background: '#071a0d',
-            borderColor: '#163d22',
-          }}
-        >
+        <div className="profile-crop-header">
 
           <button
             type="button"
@@ -6305,19 +6226,14 @@ function ProfileImageCropper({
         </div>
 
         <div
-  ref={viewportRef}
-  className="profile-crop-viewport"
-  style={{
-    touchAction: 'none',
-    cursor: 'grab',
-    userSelect: 'none',
-  }}
-  onPointerDown={handlePointerDown}
-  onPointerMove={handlePointerMove}
-  onPointerUp={handlePointerUp}
-  onPointerCancel={handlePointerUp}
-  onWheel={handleWheel}
->
+          ref={viewportRef}
+          className="profile-crop-viewport"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onWheel={handleWheel}
+        >
 
           <img
             ref={imageRef}
@@ -6352,20 +6268,12 @@ function ProfileImageCropper({
             style={{
               width: cropSize,
               height: cropSize,
-              borderColor: '#a5f51a',
-              boxShadow: '0 0 0 2px rgba(165,245,26,0.18)',
             }}
           />
 
         </div>
 
-        <div
-          className="profile-crop-controls"
-          style={{
-            background: '#071a0d',
-            borderColor: '#163d22',
-          }}
-        >
+        <div className="profile-crop-controls">
 
           <span>−</span>
 
@@ -6382,12 +6290,7 @@ function ProfileImageCropper({
 
         </div>
 
-        <div
-          className="profile-crop-hint"
-          style={{
-            background: '#071a0d',
-          }}
-        >
+        <div className="profile-crop-hint">
           Bild mit dem Finger verschieben ·
           mit zwei Fingern zoomen
         </div>
