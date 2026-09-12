@@ -8573,12 +8573,31 @@ body::after {
 .mtb-loader-fill {
   position: absolute;
   inset: 0;
-
   display: block;
-
   color: #a5f51a;
 
-  -webkit-text-stroke: 1px #d8ff8a;
+  /* DICKERE BUCHSTABEN */
+  -webkit-text-stroke: 2.5px #d8ff8a;
+  paint-order: stroke fill;
+
+  text-shadow:
+    0 0 4px #a5f51a,
+    0 0 12px #a5f51a,
+    0 0 28px rgba(165, 245, 26, 0.75),
+    0 0 55px rgba(165, 245, 26, 0.35);
+
+  overflow: hidden;
+
+  clip-path:
+    inset(
+      0 100% 0 0
+    );
+
+  animation:
+    mtbTextFill 1.65s
+    cubic-bezier(0.15, 0.7, 0.2, 1)
+    forwards;
+}
 
   text-shadow:
     0 0 4px #a5f51a,
