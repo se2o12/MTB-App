@@ -6071,72 +6071,124 @@ function ProfileImageCropper({
   }
 
   const handlePointerMove = (event) => {
-    if (!pointers.current.has(event.pointerId)) {
+  if (!pointers.current.has(event.pointerId)) {
+    return
+  }
+
+  pointers.current.set(
+    event.pointerId,
+    {
+      x: event.clientX,
+      y: event.clientY,
+    }
+  )
+
+  // 1 Finger = Bild verschieben
+  if (pointers.current.size === 1) {
+    if (!dragStart.current) return
+
+    const start = dragStart.current
+
+    const newX =
+      start.positionX +
+      (event.clientX - start.pointerX)
+
+    const newY =
+      start.positionY +
+      (event.clientY - start.pointerY)
+
+    setPosition(
+      clampPosition(newX, newY)
+    )
+
+    return
+  }
+
+  // 2 Finger = Pinch-Zoom
+  if (pointers.current.size === 2) {
+    const values = Array.from(
+      pointers.current.values()
+    )
+
+    const a = values[0]
+    const b = values[1]
+
+    const distance = Math.hypot(
+      a.x - b.x,
+      a.y - b.y
+    )
+
+    if (!lastPinchDistance.current) {
+      lastPinchDistance.current = distance
       return
     }
 
-    pointers.current.set(
-      event.pointerId,
-      {
-        x: event.clientX,
-        y: event.clientY,
-      }
+    const difference =
+      distance -
+      lastPinchDistance.current
+
+    const nextZoom = Math.max(
+      1,
+      Math.min(
+        4,
+        zoom * (1 + difference * 0.004)
+      )
     )
 
-    if (pointers.current.size === 1) {
-      if (!dragStart.current) return
+    // Mittelpunkt der beiden Finger
+    const centerX =
+      (a.x + b.x) / 2
 
-      const start = dragStart.current
+    const centerY =
+      (a.y + b.y) / 2
 
-      const newX =
-        start.positionX +
-        (event.clientX - start.pointerX)
+    const rect =
+      viewportRef.current?.getBoundingClientRect()
 
-      const newY =
-        start.positionY +
-        (event.clientY - start.pointerY)
+    if (!rect) return
 
-      setPosition(
-        clampPosition(newX, newY)
+    const viewportCenterX =
+      rect.left + rect.width / 2
+
+    const viewportCenterY =
+      rect.top + rect.height / 2
+
+    // Zoom zur Position zwischen den Fingern
+    const factor =
+      nextZoom / zoom
+
+    const nextX =
+      centerX -
+      viewportCenterX -
+      (
+        centerX -
+        viewportCenterX -
+        position.x
+      ) * factor
+
+    const nextY =
+      centerY -
+      viewportCenterY -
+      (
+        centerY -
+        viewportCenterY -
+        position.y
+      ) * factor
+
+    setZoom(nextZoom)
+
+    setPosition(
+      clampPosition(
+        nextX,
+        nextY,
+        nextZoom
       )
-    }
+    )
 
-    if (pointers.current.size === 2) {
-      const distance =
-        distanceBetweenPointers()
-
-      if (!distance) return
-
-      if (!lastPinchDistance.current) {
-        lastPinchDistance.current = distance
-        return
-      }
-
-      const difference =
-        distance -
-        lastPinchDistance.current
-
-      const nextZoom = Math.max(
-        1,
-        Math.min(
-          4,
-          zoom + difference * 0.005
-        )
-      )
-
-      setZoom(nextZoom)
-
-      setPosition(
-        clampPosition(
-          position.x,
-          position.y,
-          nextZoom
-        )
-      )
-
-      lastPinchDistance.current = distance
-    }
+    lastPinchDistance.current =
+      distance
   }
+}
 
   const handlePointerUp = (event) => {
     pointers.current.delete(
@@ -6309,8 +6361,9 @@ function ProfileImageCropper({
   className="profile-crop-viewport"
   style={{
     touchAction: 'none',
-    cursor: 'grab',
     userSelect: 'none',
+    WebkitUserSelect: 'none',
+    WebkitTouchCallout: 'none',
   }}
   onPointerDown={handlePointerDown}
   onPointerMove={handlePointerMove}
@@ -6372,7 +6425,7 @@ function ProfileImageCropper({
           <input
             type="range"
             min="1"
-            max="4"
+            max="3"
             step="0.01"
             value={zoom}
             onChange={handleZoomSlider}
