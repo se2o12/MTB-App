@@ -772,6 +772,41 @@ const getRankFromXP = (xp) => {
 /* =====================================================
    APP
 ===================================================== */
+function MTBCommunityLoader({ onFinished }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onFinished()
+    }, 3400)
+
+    return () => clearTimeout(timer)
+  }, [onFinished])
+
+  return (
+    <div className="mtb-loader-screen">
+      <div className="mtb-loader-content">
+
+        <div className="mtb-loader-title">
+          <span className="mtb-loader-base">
+            MTB COMMUNITY
+          </span>
+
+          <span className="mtb-loader-fill">
+            MTB COMMUNITY
+          </span>
+        </div>
+
+        <div className="mtb-loader-line">
+          <div className="mtb-loader-line-fill" />
+        </div>
+
+        <div className="mtb-loader-subtitle">
+          RIDING THE NEXT LINE
+        </div>
+
+      </div>
+    </div>
+  )
+}
 
 function App() {
     useEffect(() => {
@@ -796,6 +831,8 @@ function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showStartupLoader, setShowStartupLoader] =
+  useState(false)
   const [activePage, setActivePage] = useState('home')
   const [finishedTour, setFinishedTour] = useState(null)
   const [activeChat, setActiveChat] = useState(null)
@@ -843,6 +880,12 @@ function App() {
       subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+  if (!loading && session) {
+    setShowStartupLoader(true)
+  }
+}, [loading, session])
 
   useEffect(() => {
   if (!session?.user) {
@@ -1314,15 +1357,25 @@ const checkForNewMessage = async () => {
   }
 
   if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-logo">
-          <span>⌁</span> MTB
-        </div>
-        <p>Wird geladen...</p>
+  return (
+    <div className="loading-screen">
+      <div className="loading-logo">
+        <span>⌁</span> MTB
       </div>
-    )
-  }
+      <p>Wird geladen...</p>
+    </div>
+  )
+}
+
+if (showStartupLoader) {
+  return (
+    <MTBCommunityLoader
+      onFinished={() =>
+        setShowStartupLoader(false)
+      }
+    />
+  )
+}
 
   if (!session) {
     return <AuthPage />

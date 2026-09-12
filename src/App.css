@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&display=swap');
 * {
   box-sizing: border-box;
 }
@@ -8347,4 +8348,317 @@ body::after {
 
     font-size: 11px;
   }
+}
+/* =====================================================
+   MTB COMMUNITY STARTUP LOADER
+===================================================== */
+
+.mtb-loader-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(40, 90, 45, 0.16),
+      transparent 55%
+    ),
+    #050907;
+
+  overflow: hidden;
+}
+
+.mtb-loader-content {
+  width: min(720px, 88vw);
+  text-align: center;
+}
+
+/* =====================================================
+   MTB COMMUNITY — EXTREME STARTUP LOGO
+===================================================== */
+
+.mtb-loader-title {
+  position: relative;
+  display: inline-block;
+
+  font-family:
+    'Orbitron',
+    'Arial Black',
+    sans-serif;
+
+  font-size: clamp(34px, 8vw, 92px);
+  font-weight: 900;
+
+  letter-spacing: 0.055em;
+  line-height: 0.9;
+
+  white-space: nowrap;
+
+  transform:
+    skewX(-8deg)
+    perspective(500px)
+    rotateX(8deg);
+
+  filter:
+    drop-shadow(
+      0 0 10px
+      rgba(165, 245, 26, 0.15)
+    );
+}
+
+
+/* =====================================================
+   DUNKLE BASISSCHRIFT
+===================================================== */
+
+.mtb-loader-base {
+  display: block;
+
+  color:
+    rgba(165, 245, 26, 0.14);
+
+  -webkit-text-stroke:
+    1px rgba(165, 245, 26, 0.22);
+
+  text-shadow:
+    0 2px 0 #020502,
+    0 4px 12px rgba(0, 0, 0, 0.9);
+
+  animation:
+    logoBreathing 1.9s ease-in-out
+    infinite;
+}
+
+
+/* =====================================================
+   LEUCHTENDE GELADENE SCHRIFT
+===================================================== */
+
+.mtb-loader-fill {
+  position: absolute;
+
+  inset: 0;
+
+  display: block;
+
+  color: #a5f51a;
+
+  -webkit-text-stroke:
+    1px #d8ff8a;
+
+  text-shadow:
+    0 0 4px #a5f51a,
+    0 0 12px #a5f51a,
+    0 0 28px rgba(165, 245, 26, 0.75),
+    0 0 55px rgba(165, 245, 26, 0.35);
+
+  overflow: hidden;
+
+  clip-path:
+    inset(
+      0 100% 0 0
+    );
+
+  animation:
+  mtbTextFill 3.4s
+  cubic-bezier(0.55, 0.02, 0.35, 1)
+  forwards;
+}
+
+
+/* =====================================================
+   LICHT-SCAN AN DER LADEFRONT
+===================================================== */
+
+.mtb-loader-fill::after {
+  content: '';
+
+  position: absolute;
+
+  top: -20%;
+  left: 0;
+
+  width: 45px;
+  height: 140%;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.95),
+      rgba(165, 245, 26, 0.9),
+      transparent
+    );
+
+  filter:
+    blur(5px);
+
+  transform:
+    skewX(-12deg);
+
+  animation:
+  mtbScan 3.2s
+  cubic-bezier(0.15, 0.7, 0.2, 1)
+  forwards;
+}
+
+
+/* =====================================================
+   TEXT-FILL
+===================================================== */
+
+@keyframes mtbTextFill {
+
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+
+}
+
+
+/* =====================================================
+   SCAN
+===================================================== */
+
+@keyframes mtbScan {
+
+  0% {
+    left: -60px;
+    opacity: 0;
+  }
+
+  8% {
+    opacity: 1;
+  }
+
+  100% {
+    left: 110%;
+    opacity: 0.9;
+  }
+
+}
+
+
+/* =====================================================
+   LEICHTES ATMEN
+===================================================== */
+
+@keyframes logoBreathing {
+
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+}
+
+
+/* =====================================================
+   LADELINIE
+===================================================== */
+
+.mtb-loader-fill {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+
+  color: #a5f51a;
+
+  -webkit-text-stroke: 1px #d8ff8a;
+
+  text-shadow:
+    0 0 4px #a5f51a,
+    0 0 12px #a5f51a,
+    0 0 28px rgba(165, 245, 26, 0.75),
+    0 0 55px rgba(165, 245, 26, 0.35);
+
+  /*
+    NUR DIE BUCHSTABEN werden gefüllt.
+    Kein Rechteck und kein Balken außen herum.
+  */
+  clip-path: inset(
+    0 100% 0 0
+  );
+
+  animation:
+    mtbTextFill 1.65s
+    cubic-bezier(0.15, 0.7, 0.2, 1)
+    forwards;
+}
+
+
+/* =====================================================
+   UNTERTITEL
+===================================================== */
+
+.mtb-loader-subtitle {
+  margin-top: 16px;
+
+  font-family:
+    'Orbitron',
+    Arial,
+    sans-serif;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  letter-spacing: 0.35em;
+
+  color:
+    rgba(165, 245, 26, 0.42);
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 600px) {
+
+  .mtb-loader-title {
+    font-size: clamp(30px, 9vw, 52px);
+    letter-spacing: 0.035em;
+  }
+
+  .mtb-loader-line {
+    margin-top: 24px;
+    height: 3px;
+  }
+
+  .mtb-loader-subtitle {
+    font-size: 8px;
+    letter-spacing: 0.25em;
+  }
+
+}
+
+
+/* =====================================================
+   REDUCED MOTION
+===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .mtb-loader-fill,
+  .mtb-loader-fill::after,
+  .mtb-loader-line-fill,
+  .mtb-loader-base {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
 }
