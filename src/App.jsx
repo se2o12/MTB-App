@@ -1735,7 +1735,7 @@ function AuthPage() {
                 autoComplete="one-time-code"
                 placeholder="123456"
                 value={code}
-                maxLength={6}
+                maxLength={8}
                 onChange={(event) =>
                   setCode(
                     event.target.value.replace(
