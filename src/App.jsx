@@ -786,14 +786,16 @@ function MTBCommunityLoader({ onFinished }) {
       <div className="mtb-loader-content">
 
         <div className="mtb-loader-title">
-          <span className="mtb-loader-base">
-            MTB COMMUNITY
-          </span>
+  <span className="mtb-loader-base">
+    <span>MTB</span>
+    <span>COMMUNITY</span>
+  </span>
 
-          <span className="mtb-loader-fill">
-            MTB COMMUNITY
-          </span>
-        </div>
+  <span className="mtb-loader-fill">
+    <span>MTB</span>
+    <span>COMMUNITY</span>
+  </span>
+</div>
 
         <div className="mtb-loader-line">
           <div className="mtb-loader-line-fill" />

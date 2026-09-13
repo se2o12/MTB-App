@@ -8384,90 +8384,68 @@ body::after {
 
 .mtb-loader-title {
   position: relative;
-  display: inline-block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  text-align: center;
 
-  font-family:
-    'Orbitron',
-    'Arial Black',
-    sans-serif;
-
-  font-size: clamp(34px, 8vw, 92px);
+  font-family: Orbitron, Arial Black, sans-serif;
   font-weight: 900;
-
-  letter-spacing: 0.055em;
+  font-style: italic;
   line-height: 0.9;
+  letter-spacing: 0.04em;
 
-  white-space: nowrap;
-
-  transform:
-    skewX(-8deg)
-    perspective(500px)
-    rotateX(8deg);
-
-  filter:
-    drop-shadow(
-      0 0 10px
-      rgba(165, 245, 26, 0.15)
-    );
+  transform: skewX(-6deg);
 }
 
-
-/* =====================================================
-   DUNKLE BASISSCHRIFT
-===================================================== */
+.mtb-loader-base,
+.mtb-loader-fill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
 
 .mtb-loader-base {
-  display: block;
-
-  color:
-    rgba(165, 245, 26, 0.14);
-
-  -webkit-text-stroke:
-    1px rgba(165, 245, 26, 0.22);
-
-  text-shadow:
-    0 2px 0 #020502,
-    0 4px 12px rgba(0, 0, 0, 0.9);
-
-  animation:
-    logoBreathing 1.9s ease-in-out
-    infinite;
+  color: #102010;
 }
-
-
-/* =====================================================
-   LEUCHTENDE GELADENE SCHRIFT
-===================================================== */
 
 .mtb-loader-fill {
   position: absolute;
-
   inset: 0;
 
-  display: block;
+  color: #9cff00;
 
-  color: #a5f51a;
-
-  -webkit-text-stroke:
-    1px #d8ff8a;
+  clip-path: inset(0 100% 0 0);
+  animation: mtbLoaderTextFill 1.75s ease forwards;
 
   text-shadow:
-    0 0 4px #a5f51a,
-    0 0 12px #a5f51a,
-    0 0 28px rgba(165, 245, 26, 0.75),
-    0 0 55px rgba(165, 245, 26, 0.35);
+    0 0 5px rgba(156, 255, 0, 0.8),
+    0 0 15px rgba(156, 255, 0, 0.5),
+    0 0 30px rgba(156, 255, 0, 0.25);
+}
 
-  overflow: hidden;
+.mtb-loader-base span:first-child,
+.mtb-loader-fill span:first-child {
+  font-size: clamp(52px, 12vw, 110px);
+  letter-spacing: 0.08em;
+}
 
-  clip-path:
-    inset(
-      0 100% 0 0
-    );
+.mtb-loader-base span:last-child,
+.mtb-loader-fill span:last-child {
+  font-size: clamp(28px, 6vw, 58px);
+  letter-spacing: 0.18em;
+}
 
-  animation:
-  mtbTextFill 3.4s
-  cubic-bezier(0.55, 0.02, 0.35, 1)
-  forwards;
+@keyframes mtbLoaderTextFill {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }
 
 
@@ -8565,61 +8543,6 @@ body::after {
 
 }
 
-
-/* =====================================================
-   LADELINIE
-===================================================== */
-
-.mtb-loader-fill {
-  position: absolute;
-  inset: 0;
-  display: block;
-  color: #a5f51a;
-
-  /* DICKERE BUCHSTABEN */
-  -webkit-text-stroke: 4px #d8ff8a;
-  paint-order: stroke fill;
-
-  text-shadow:
-    0 0 4px #a5f51a,
-    0 0 12px #a5f51a,
-    0 0 28px rgba(165, 245, 26, 0.75),
-    0 0 55px rgba(165, 245, 26, 0.35);
-
-  overflow: hidden;
-
-  clip-path:
-    inset(
-      0 100% 0 0
-    );
-
-  animation:
-    mtbTextFill 1.65s
-    cubic-bezier(0.15, 0.7, 0.2, 1)
-    forwards;
-}
-
-  text-shadow:
-    0 0 4px #a5f51a,
-    0 0 12px #a5f51a,
-    0 0 28px rgba(165, 245, 26, 0.75),
-    0 0 55px rgba(165, 245, 26, 0.35);
-
-  /*
-    NUR DIE BUCHSTABEN werden gefüllt.
-    Kein Rechteck und kein Balken außen herum.
-  */
-  clip-path: inset(
-    0 100% 0 0
-  );
-
-  animation:
-    mtbTextFill 1.65s
-    cubic-bezier(0.15, 0.7, 0.2, 1)
-    forwards;
-}
-
-
 /* =====================================================
    UNTERTITEL
 ===================================================== */
@@ -8680,4 +8603,25 @@ body::after {
     animation-iteration-count: 1 !important;
   }
 
+}
+@media (max-width: 600px) {
+  .mtb-loader-title {
+    transform: skewX(-4deg);
+    padding: 0 20px;
+  }
+
+  .mtb-loader-base span:first-child,
+  .mtb-loader-fill span:first-child {
+    font-size: clamp(48px, 16vw, 78px);
+  }
+
+  .mtb-loader-base span:last-child,
+  .mtb-loader-fill span:last-child {
+    font-size: clamp(24px, 8vw, 42px);
+    letter-spacing: 0.12em;
+  }
+
+  .mtb-loader-title {
+    gap: 0;
+  }
 }
