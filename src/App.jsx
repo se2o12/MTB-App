@@ -1578,17 +1578,20 @@ if (showStartupLoader) {
 
 /* =====================================================
    LOGIN / REGISTRIERUNG
-   E-MAIL + EINMAL-CODE
+   E-MAIL + PASSWORT
 ===================================================== */
 
 function AuthPage() {
   const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
-  const [step, setStep] = useState('email')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [mode, setMode] = useState('login')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  const sendCode = async (event) => {
+  const isLogin = mode === 'login'
+
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
     const cleanEmail = email.trim().toLowerCase()
@@ -1600,265 +1603,229 @@ function AuthPage() {
       return
     }
 
-    setLoading(true)
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: {
-        shouldCreateUser: true,
-      },
-    })
-
-    if (error) {
-      console.error('OTP senden:', error)
-
-      setMessage(
-        'Code konnte nicht gesendet werden: ' +
-          error.message
-      )
-    } else {
-      setStep('code')
-      setMessage(
-        'Wir haben dir einen Code per E-Mail geschickt.'
-      )
+    if (!password) {
+      setMessage('Bitte dein Passwort eingeben.')
+      return
     }
 
-    setLoading(false)
-  }
-
-  const verifyCode = async (event) => {
-    event.preventDefault()
-
-    const cleanEmail = email.trim().toLowerCase()
-    const cleanCode = code.trim()
-
-    setMessage('')
-
-    if (!cleanCode) {
-      setMessage('Bitte den Code eingeben.')
+    if (password.length < 6) {
+      setMessage(
+        'Das Passwort muss mindestens 6 Zeichen lang sein.'
+      )
       return
     }
 
     setLoading(true)
 
-    const { data, error } =
-      await supabase.auth.verifyOtp({
-        email: cleanEmail,
-        token: cleanCode,
-        type: 'email',
-      })
+    if (isLogin) {
+      const { error } =
+        await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        })
 
-    if (error) {
-      console.error('OTP bestätigen:', error)
+      if (error) {
+        console.error('Login:', error)
 
-      setMessage(
-        'Der Code ist ungültig oder abgelaufen.'
-      )
-
-      setLoading(false)
-      return
-    }
-
-    if (data.session) {
-      console.log('Login erfolgreich')
-    }
-
-    setLoading(false)
-  }
-
-  const resendCode = async () => {
-    const cleanEmail = email.trim().toLowerCase()
-
-    if (!cleanEmail) return
-
-    setLoading(true)
-    setMessage('')
-
-    const { error } =
-      await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-          shouldCreateUser: true,
-        },
-      })
-
-    if (error) {
-      setMessage(
-        'Code konnte nicht erneut gesendet werden: ' +
-          error.message
-      )
+        setMessage(
+          'Anmeldung fehlgeschlagen: ' +
+            error.message
+        )
+      }
     } else {
-      setMessage(
-        'Ein neuer Code wurde an deine E-Mail gesendet.'
-      )
+      const { data, error } =
+        await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+        })
+
+      if (error) {
+        console.error('Registrierung:', error)
+
+        setMessage(
+          'Registrierung fehlgeschlagen: ' +
+            error.message
+        )
+      } else if (!data.session) {
+        setMessage(
+          'Account erstellt. Falls Supabase eine E-Mail-Bestätigung verlangt, bestätige zuerst deine E-Mail-Adresse.'
+        )
+      }
     }
 
     setLoading(false)
   }
 
-  const changeEmail = () => {
-    setStep('email')
-    setCode('')
+  const switchMode = () => {
+    setMode(
+      isLogin
+        ? 'register'
+        : 'login'
+    )
+
     setMessage('')
+    setPassword('')
   }
 
   return (
     <div className="auth-screen">
+
       <div className="auth-card">
+
+        {/* =====================================================
+           LOGO
+        ===================================================== */}
 
         <div className="setup-logo">
           <span>⌁</span>
           MTB
         </div>
 
-        <div className="auth-badge">
-          {step === 'email' ? '✉️' : '🔐'}
+        <div className="auth-logo-subtitle">
+          COMMUNITY
         </div>
 
-        {step === 'email' ? (
-          <>
-            <h1>
-              Willkommen! 👋
-            </h1>
+        {/* =====================================================
+           ICON
+        ===================================================== */}
 
-            <p className="setup-description">
-              Gib deine E-Mail-Adresse ein und
-              wir schicken dir einen Anmeldecode.
-            </p>
+        <div className="auth-badge">
+          {isLogin ? '🔐' : '🚵'}
+        </div>
 
-            <form onSubmit={sendCode}>
+        {/* =====================================================
+           TITEL
+        ===================================================== */}
 
-              <label className="input-label">
-                E-MAIL
-              </label>
+        <h1>
+          {isLogin
+            ? 'Willkommen zurück! 👋'
+            : 'MTB Community 🚵'}
+        </h1>
 
-              <input
-                className="name-input"
-                type="email"
-                placeholder="deine@email.de"
-                value={email}
-                autoComplete="email"
-                onChange={(event) =>
-                  setEmail(event.target.value)
-                }
-                autoFocus
-              />
-
-              {message && (
-                <div className="auth-message">
-                  {message}
-                </div>
-              )}
-
-              <button
-                className="create-button"
-                type="submit"
-                disabled={loading}
-              >
-                {loading
-                  ? 'CODE WIRD GESENDET...'
-                  : 'CODE ANFORDERN'}
-
-                {!loading && (
-                  <span>→</span>
-                )}
-              </button>
-
-            </form>
-          </>
-        ) : (
-          <>
-            <h1>
-              Code eingeben 🔐
-            </h1>
-
-            <p className="setup-description">
-              Wir haben einen Anmeldecode an
-              <strong> {email}</strong> geschickt.
-            </p>
-
-            <form onSubmit={verifyCode}>
-
-              <label className="input-label">
-                ANMELDECODE
-              </label>
-
-              <input
-                className="name-input auth-code-input"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="123456"
-                value={code}
-                maxLength={8}
-                onChange={(event) =>
-                  setCode(
-                    event.target.value.replace(
-                      /\D/g,
-                      ''
-                    )
-                  )
-                }
-                autoFocus
-              />
-
-              {message && (
-                <div className="auth-message">
-                  {message}
-                </div>
-              )}
-
-              <button
-                className="create-button"
-                type="submit"
-                disabled={
-                  loading ||
-                  code.length < 6
-                }
-              >
-                {loading
-                  ? 'WIRD ANGEMELDET...'
-                  : 'ANMELDEN'}
-
-                {!loading && (
-                  <span>→</span>
-                )}
-              </button>
-
-            </form>
-
-            <div className="auth-code-actions">
-
-              <button
-                className="auth-switch"
-                type="button"
-                onClick={resendCode}
-                disabled={loading}
-              >
-                Code erneut senden
-              </button>
-
-              <button
-                className="auth-switch"
-                type="button"
-                onClick={changeEmail}
-                disabled={loading}
-              >
-                ← Andere E-Mail verwenden
-              </button>
-
-            </div>
-          </>
-        )}
-
-        <p className="privacy-note">
-          Kostenlos anmelden · Kein Passwort notwendig
+        <p className="setup-description">
+          {isLogin
+            ? 'Melde dich an und fahr mit deiner Community los.'
+            : 'Erstelle deinen kostenlosen Account und werde Teil der Community.'}
         </p>
 
+        {/* =====================================================
+           FORMULAR
+        ===================================================== */}
+
+        <form onSubmit={handleSubmit}>
+
+          <label className="input-label">
+            E-MAIL
+          </label>
+
+          <input
+            className="name-input"
+            type="email"
+            placeholder="deine@email.de"
+            value={email}
+            autoComplete="email"
+            onChange={(event) =>
+              setEmail(event.target.value)
+            }
+            autoFocus
+          />
+
+          <label className="input-label auth-password-label">
+            PASSWORT
+          </label>
+
+          <div className="password-input-wrapper">
+
+  <input
+    className="name-input password-input"
+    type={showPassword ? 'text' : 'password'}
+    placeholder="Mindestens 6 Zeichen"
+    value={password}
+    autoComplete={
+      isLogin
+        ? 'current-password'
+        : 'new-password'
+    }
+    onChange={(event) =>
+      setPassword(event.target.value)
+    }
+  />
+
+  <button
+    type="button"
+    className="password-eye"
+    onClick={() =>
+      setShowPassword((current) => !current)
+    }
+    aria-label={
+      showPassword
+        ? 'Passwort verbergen'
+        : 'Passwort anzeigen'
+    }
+  >
+    {showPassword ? '🙈' : '👁️'}
+  </button>
+
+</div>
+
+          {message && (
+            <div className="auth-message">
+              {message}
+            </div>
+          )}
+
+          <button
+            className="create-button"
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? isLogin
+                ? 'WIRD ANGEMELDET...'
+                : 'ACCOUNT WIRD ERSTELLT...'
+              : isLogin
+                ? 'ANMELDEN'
+                : 'ACCOUNT ERSTELLEN'}
+
+            {!loading && (
+              <span>→</span>
+            )}
+          </button>
+
+        </form>
+
+        {/* =====================================================
+           MODUS WECHSELN
+        ===================================================== */}
+
+        <div className="auth-switch-container">
+
+          <span>
+            {isLogin
+              ? 'Noch keinen Account?'
+              : 'Du hast bereits einen Account?'}
+          </span>
+
+          <button
+            className="auth-switch"
+            type="button"
+            onClick={switchMode}
+            disabled={loading}
+          >
+            {isLogin
+              ? 'Jetzt registrieren'
+              : 'Jetzt anmelden'}
+          </button>
+
+        </div>
+
       </div>
+
     </div>
   )
 }
+
 
 /* =====================================================
    PROFIL SETUP
@@ -2608,56 +2575,56 @@ function TourDetailPage({
     if (!mapContainer.current) return
 
     const rawCoordinates =
-  tour.path ||
-  tour.route ||
-  tour.track ||
-  tour.coordinates ||
-  []
+      tour.path ||
+      tour.route ||
+      tour.track ||
+      tour.coordinates ||
+      []
 
-const coordinates = Array.isArray(rawCoordinates)
-  ? rawCoordinates
-      .map((point) => {
-        // GPS-Punkt als Objekt
-        if (
-          point &&
-          typeof point === 'object' &&
-          !Array.isArray(point)
-        ) {
-          const lat = Number(point.lat)
-          const lon = Number(
-            point.lon ?? point.lng
-          )
+    const coordinates = Array.isArray(rawCoordinates)
+      ? rawCoordinates
+          .map((point) => {
+            // GPS-Punkt als Objekt
+            if (
+              point &&
+              typeof point === 'object' &&
+              !Array.isArray(point)
+            ) {
+              const lat = Number(point.lat)
+              const lon = Number(
+                point.lon ?? point.lng
+              )
 
-          if (
-            Number.isFinite(lat) &&
-            Number.isFinite(lon)
-          ) {
-            return [lon, lat]
-          }
+              if (
+                Number.isFinite(lat) &&
+                Number.isFinite(lon)
+              ) {
+                return [lon, lat]
+              }
 
-          return null
-        }
+              return null
+            }
 
-        // Bereits im MapLibre-Format [lon, lat]
-        if (
-          Array.isArray(point) &&
-          point.length >= 2
-        ) {
-          const lon = Number(point[0])
-          const lat = Number(point[1])
+            // Bereits im MapLibre-Format [lon, lat]
+            if (
+              Array.isArray(point) &&
+              point.length >= 2
+            ) {
+              const lon = Number(point[0])
+              const lat = Number(point[1])
 
-          if (
-            Number.isFinite(lon) &&
-            Number.isFinite(lat)
-          ) {
-            return [lon, lat]
-          }
-        }
+              if (
+                Number.isFinite(lon) &&
+                Number.isFinite(lat)
+              ) {
+                return [lon, lat]
+              }
+            }
 
-        return null
-      })
-      .filter(Boolean)
-  : []
+            return null
+          })
+          .filter(Boolean)
+      : []
 
     if (
       !Array.isArray(coordinates) ||
@@ -2707,7 +2674,6 @@ const coordinates = Array.isArray(rawCoordinates)
     mapRef.current = map
 
     map.on('load', () => {
-
       /* -----------------------------------------
          ROUTE-LINIE
       ----------------------------------------- */
@@ -2728,31 +2694,22 @@ const coordinates = Array.isArray(rawCoordinates)
       })
 
       map.addLayer({
-  id: 'tour-route-line',
-  type: 'line',
-  source: 'tour-route',
+        id: 'tour-route-line',
+        type: 'line',
+        source: 'tour-route',
 
-  layout: {
-    'line-cap': 'round',
-    'line-join': 'round',
-  },
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
 
-  paint: {
-    'line-color': '#a5f51a',
-    'line-width': 5,
-    'line-opacity': 0.95,
-    'line-blur': 0.3,
-  },
-})
-
-const smoothCoordinates = coordinates.filter((_, index) => {
-  if (index === 0 || index === coordinates.length - 1) {
-    return true
-  }
-
-  // Jeden zweiten GPS-Punkt entfernen
-  return index % 2 === 0
-})
+        paint: {
+          'line-color': '#a5f51a',
+          'line-width': 5,
+          'line-opacity': 0.95,
+          'line-blur': 0.3,
+        },
+      })
 
       /* -----------------------------------------
          STARTPUNKT
@@ -2861,6 +2818,7 @@ const smoothCoordinates = coordinates.filter((_, index) => {
 
           <div className="tour-no-route">
             🗺️
+
             <strong>
               Keine GPS-Strecke gespeichert
             </strong>
@@ -5322,6 +5280,787 @@ function TrailFinder() {
   )
 }
 
+/* =====================================================
+   🚵 MTB TRAILS AUS OPENSTREETMAP
+===================================================== */
+
+const MTB_TRAIL_COLORS = {
+  '0': '#39D353',
+  '1': '#39D353',
+  '2': '#168CFF',
+  '3': '#FF3030',
+  '4': '#111111',
+  '5': '#111111',
+  '6': '#111111',
+}
+
+async function loadMtbTrails(map) {
+  if (!map) return
+
+  const bounds = map.getBounds()
+
+  const south = bounds.getSouth()
+  const west = bounds.getWest()
+  const north = bounds.getNorth()
+  const east = bounds.getEast()
+
+  // Bei sehr weit herausgezoomter Karte nicht laden.
+  // Sonst wäre die Anfrage viel zu groß.
+  if (map.getZoom() < 9) {
+    if (map.getLayer('mtb-trails-line')) {
+      map.setLayoutProperty(
+        'mtb-trails-line',
+        'visibility',
+        'none'
+      )
+    }
+
+    return
+  }
+
+  const query = `
+    [out:json][timeout:25];
+
+    way(
+      ${south},
+      ${west},
+      ${north},
+      ${east}
+    )
+    [
+      "mtb:scale"
+    ];
+
+    out geom;
+  `
+
+  try {
+    const response = await fetch(
+      'https://overpass-api.de/api/interpreter',
+      {
+        method: 'POST',
+        body: 'data=' + encodeURIComponent(query),
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        `Overpass HTTP ${response.status}`
+      )
+    }
+
+    const data = await response.json()
+
+    const features = data.elements
+      .filter(
+        (element) =>
+          element.type === 'way' &&
+          Array.isArray(element.geometry) &&
+          element.geometry.length >= 2
+      )
+      .map((element) => {
+        const rawScale =
+          element.tags?.['mtb:scale']
+
+        // Werte wie 2+, 3- oder 4 werden
+        // auf die Grundstufe reduziert.
+        const scaleMatch =
+          String(rawScale || '').match(/[0-6]/)
+
+        const scale = scaleMatch
+          ? scaleMatch[0]
+          : null
+
+        if (!scale) return null
+
+        return {
+          type: 'Feature',
+          properties: {
+            scale,
+            name:
+              element.tags?.name ||
+              `MTB Trail S${scale}`,
+          },
+          geometry: {
+            type: 'LineString',
+            coordinates:
+              element.geometry.map(
+                (point) => [
+                  point.lon,
+                  point.lat,
+                ]
+              ),
+          },
+        }
+      })
+      .filter(Boolean)
+
+    const geojson = {
+      type: 'FeatureCollection',
+      features,
+    }
+
+    if (!map.getSource('mtb-trails')) {
+      map.addSource('mtb-trails', {
+        type: 'geojson',
+        data: geojson,
+      })
+
+      map.addLayer({
+        id: 'mtb-trails-line',
+        type: 'line',
+        source: 'mtb-trails',
+
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+
+        paint: {
+          'line-color': [
+            'match',
+            ['get', 'scale'],
+
+            '0',
+            MTB_TRAIL_COLORS['0'],
+
+            '1',
+            MTB_TRAIL_COLORS['1'],
+
+            '2',
+            MTB_TRAIL_COLORS['2'],
+
+            '3',
+            MTB_TRAIL_COLORS['3'],
+
+            '4',
+            MTB_TRAIL_COLORS['4'],
+
+            '5',
+            MTB_TRAIL_COLORS['5'],
+
+            '6',
+            MTB_TRAIL_COLORS['6'],
+
+            '#888888',
+          ],
+
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+
+            9,
+            2,
+
+            12,
+            3,
+
+            15,
+            5,
+
+            18,
+            7,
+          ],
+
+          'line-opacity': 0.9,
+        },
+      })
+
+      map.addLayer({
+        id: 'mtb-trails-casing',
+        type: 'line',
+        source: 'mtb-trails',
+
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+
+        paint: {
+          'line-color': '#000000',
+
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+
+            9,
+            3,
+
+            12,
+            4,
+
+            15,
+            6,
+
+            18,
+            8,
+          ],
+
+          'line-opacity': 0.18,
+        },
+      })
+
+      // Die farbige Linie über den Rand legen.
+      map.moveLayer('mtb-trails-line')
+    } else {
+      map
+        .getSource('mtb-trails')
+        .setData(geojson)
+
+      map.setLayoutProperty(
+        'mtb-trails-line',
+        'visibility',
+        'visible'
+      )
+    }
+
+  } catch (error) {
+    console.error(
+      'MTB-Trails konnten nicht geladen werden:',
+      error
+    )
+  }
+}
+
+/* =====================================================
+   OSM MTB TRAILS
+===================================================== */
+async function loadOsmMtbTrails(map) {
+  if (!map) return
+
+  const bounds = map.getBounds()
+
+  const south = bounds.getSouth()
+  const west = bounds.getWest()
+  const north = bounds.getNorth()
+  const east = bounds.getEast()
+
+  const query = `
+[out:json][timeout:25];
+
+(
+  way["highway"="path"]["mtb:scale"](${south},${west},${north},${east});
+  way["highway"="track"]["mtb:scale"](${south},${west},${north},${east});
+
+  way["highway"="path"]["mtb:scale:imba"](${south},${west},${north},${east});
+  way["highway"="track"]["mtb:scale:imba"](${south},${west},${north},${east});
+);
+
+out geom;
+`
+
+  try {
+    const response = await fetch(
+      'https://overpass-api.de/api/interpreter',
+      {
+        method: 'POST',
+        body: query,
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        `Overpass HTTP ${response.status}`
+      )
+    }
+
+    const data = await response.json()
+
+    const features = []
+
+    for (const element of data.elements || []) {
+      if (
+        element.type !== 'way' ||
+        !Array.isArray(element.geometry) ||
+        element.geometry.length < 2
+      ) {
+        continue
+      }
+
+      const tags = element.tags || {}
+
+      const scale =
+        tags['mtb:scale'] ??
+        tags['mtb:scale:imba'] ??
+        null
+
+      if (scale === null) continue
+
+      const numericScale = Number(
+        String(scale).replace(/[+-]/g, '')
+      )
+
+      if (
+        !Number.isFinite(numericScale) ||
+        numericScale < 0
+      ) {
+        continue
+      }
+
+      const coordinates =
+        element.geometry.map((point) => [
+          Number(point.lon),
+          Number(point.lat),
+        ])
+
+      features.push({
+        type: 'Feature',
+
+        geometry: {
+          type: 'LineString',
+          coordinates,
+        },
+
+        properties: {
+          id: element.id,
+          name: tags.name || '',
+          scale: numericScale,
+          scaleRaw: String(scale),
+        },
+      })
+    }
+
+    const geojson = {
+      type: 'FeatureCollection',
+      features,
+    }
+
+    /* -----------------------------------------
+       SOURCE
+    ----------------------------------------- */
+
+    if (map.getSource('osm-mtb-trails')) {
+      map
+        .getSource('osm-mtb-trails')
+        .setData(geojson)
+    } else {
+      map.addSource('osm-mtb-trails', {
+        type: 'geojson',
+        data: geojson,
+      })
+    }
+
+    /* -----------------------------------------
+       GRÜN – S0
+    ----------------------------------------- */
+
+    if (!map.getLayer('osm-mtb-trails-green')) {
+      map.addLayer({
+        id: 'osm-mtb-trails-green',
+
+        type: 'line',
+
+        source: 'osm-mtb-trails',
+
+        filter: [
+          '==',
+          ['get', 'scale'],
+          0,
+        ],
+
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+
+        paint: {
+          'line-color': '#39ff14',
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            10, 2,
+            14, 4,
+            18, 6,
+          ],
+          'line-opacity': 0.95,
+        },
+      })
+    }
+
+    /* -----------------------------------------
+       BLAU – S1
+    ----------------------------------------- */
+
+    if (!map.getLayer('osm-mtb-trails-blue')) {
+      map.addLayer({
+        id: 'osm-mtb-trails-blue',
+
+        type: 'line',
+
+        source: 'osm-mtb-trails',
+
+        filter: [
+          '==',
+          ['get', 'scale'],
+          1,
+        ],
+
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+
+        paint: {
+          'line-color': '#168cff',
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            10, 2,
+            14, 4,
+            18, 6,
+          ],
+          'line-opacity': 0.95,
+        },
+      })
+    }
+
+    /* -----------------------------------------
+       ROT – S2
+    ----------------------------------------- */
+
+    if (!map.getLayer('osm-mtb-trails-red')) {
+      map.addLayer({
+        id: 'osm-mtb-trails-red',
+
+        type: 'line',
+
+        source: 'osm-mtb-trails',
+
+        filter: [
+          '==',
+          ['get', 'scale'],
+          2,
+        ],
+
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+
+        paint: {
+          'line-color': '#ff3030',
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            10, 2,
+            14, 4,
+            18, 6,
+          ],
+          'line-opacity': 0.95,
+        },
+      })
+    }
+
+    /* -----------------------------------------
+       SCHWARZ – S3 bis S6
+    ----------------------------------------- */
+
+    if (!map.getLayer('osm-mtb-trails-black')) {
+      map.addLayer({
+        id: 'osm-mtb-trails-black',
+
+        type: 'line',
+
+        source: 'osm-mtb-trails',
+
+        filter: [
+          '>=',
+          ['get', 'scale'],
+          3,
+        ],
+
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+
+        paint: {
+          'line-color': '#111111',
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            10, 2,
+            14, 4,
+            18, 6,
+          ],
+          'line-opacity': 0.98,
+        },
+      })
+    }
+/* =====================================================
+   UNSICHTBARE KLICKFLÄCHE FÜR MTB-TRAILS
+===================================================== */
+
+if (!map.getLayer('osm-mtb-trails-hitbox')) {
+  map.addLayer({
+    id: 'osm-mtb-trails-hitbox',
+
+    type: 'line',
+
+    source: 'osm-mtb-trails',
+
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+
+    paint: {
+      /*
+       * Unsichtbar für den Benutzer,
+       * aber breit genug zum Anklicken.
+       */
+      'line-color': '#ffffff',
+
+      'line-width': [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+
+        10, 12,
+        12, 14,
+        14, 18,
+        16, 22,
+        18, 26,
+      ],
+
+      'line-opacity': 0,
+    },
+  })
+}
+
+/* =====================================================
+   TRAIL KLICKEN
+===================================================== */
+
+if (!map.__mtbTrailClickHandler) {
+
+  map.__mtbTrailClickHandler = (event) => {
+
+    const layers = [
+      'osm-mtb-trails-green',
+      'osm-mtb-trails-blue',
+      'osm-mtb-trails-red',
+      'osm-mtb-trails-black',
+    ].filter((id) => map.getLayer(id))
+
+    if (layers.length === 0) {
+      console.warn('Keine MTB-Trail-Layer vorhanden')
+      return
+    }
+
+    const clickedFeatures =
+      map.queryRenderedFeatures(
+        event.point,
+        {
+          layers,
+        }
+      )
+
+    if (!clickedFeatures.length) {
+      return
+    }
+
+    const feature = clickedFeatures[0]
+    const properties = feature.properties || {}
+
+    console.log(
+      '🚵 MTB TRAIL ANGEKLICKT:',
+      properties
+    )
+
+    const trailName =
+      properties.name ||
+      'Unbenannter MTB Trail'
+
+    const scale =
+      Number(properties.scale)
+
+    const difficultyNames = {
+      0: 'S0 – Sehr leicht',
+      1: 'S1 – Leicht',
+      2: 'S2 – Mittel',
+      3: 'S3 – Schwer',
+      4: 'S4 – Sehr schwer',
+      5: 'S5 – Extrem',
+      6: 'S6 – Extrem',
+    }
+
+    const difficulty =
+      difficultyNames[scale] ||
+      properties.scaleRaw ||
+      'Unbekannt'
+
+    /* ---------------------------------------------
+       AUSGEWÄHLTEN TRAIL SPEICHERN
+    --------------------------------------------- */
+
+    if (map.getLayer('selected-osm-mtb-trail')) {
+      map.removeLayer(
+        'selected-osm-mtb-trail'
+      )
+    }
+
+    /* ---------------------------------------------
+       TRAIL HERVORHEBEN
+    --------------------------------------------- */
+
+    map.addLayer({
+      id: 'selected-osm-mtb-trail',
+
+      type: 'line',
+
+      source: 'osm-mtb-trails',
+
+      filter: [
+        '==',
+        ['get', 'id'],
+        Number(properties.id),
+      ],
+
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+
+      paint: {
+        'line-color': '#a5f51a',
+
+        'line-width': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+
+          10, 5,
+          14, 8,
+          18, 12,
+        ],
+
+        'line-opacity': 1,
+
+        'line-blur': 0.3,
+      },
+    })
+
+    /* ---------------------------------------------
+       POPUP
+    --------------------------------------------- */
+
+    new Popup({
+      closeButton: true,
+      closeOnClick: true,
+      maxWidth: '300px',
+    })
+      .setLngLat(event.lngLat)
+      .setHTML(`
+        <div class="mtb-trail-popup">
+
+          <div class="mtb-trail-popup-label">
+            🚵 MTB TRAIL
+          </div>
+
+          <strong>
+            ${escapeHtml(trailName)}
+          </strong>
+
+          <span>
+            Schwierigkeit:
+            <b>
+              ${escapeHtml(difficulty)}
+            </b>
+          </span>
+
+        </div>
+      `)
+      .addTo(map)
+  }
+
+  /* ---------------------------------------------
+     MAP-KLICK
+  --------------------------------------------- */
+
+map.on(
+  'click',
+  'osm-mtb-trails-hitbox',
+  map.__mtbTrailClickHandler
+)
+
+  /* ---------------------------------------------
+     CURSOR
+  --------------------------------------------- */
+
+  map.on(
+    'mousemove',
+    (event) => {
+
+      const layers = [
+        'osm-mtb-trails-green',
+        'osm-mtb-trails-blue',
+        'osm-mtb-trails-red',
+        'osm-mtb-trails-black',
+      ].filter(
+        (id) => map.getLayer(id)
+      )
+
+      if (!layers.length) {
+        map.getCanvas().style.cursor = ''
+        return
+      }
+
+      const features =
+        map.queryRenderedFeatures(
+          event.point,
+          { layers }
+        )
+
+      map.getCanvas().style.cursor =
+        features.length
+          ? 'pointer'
+          : ''
+    }
+  )
+}
+
+    console.log(
+      `OSM MTB Trails geladen: ${features.length}`
+    )
+
+  } catch (error) {
+    console.error(
+      'Fehler beim Laden der OSM MTB Trails:',
+      error
+    )
+  }
+}
+
+/* =====================================================
+   WAYMARKED MTB TRAILS
+===================================================== */
+
+
+
+
+/* =====================================================
+   HTML SICHER MACHEN
+===================================================== */
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll(
+      "'",
+      '&#039;'
+    )
+}
+
 function MapPage() {
   const mapContainer = useRef(null)
   const mapRef = useRef(null)
@@ -5338,12 +6077,14 @@ const [tourDistance, setTourDistance] = useState(0)
 const [tourElevation, setTourElevation] = useState(0)
 
 const trackRef = useRef([])
+const [trailSearch, setTrailSearch] = useState('')
+const [selectedTrail, setSelectedTrail] = useState(null)
 
-  /* ---------------------------------------------
-     KARTE ERSTELLEN
-  --------------------------------------------- */
+/* ---------------------------------------------
+   KARTE ERSTELLEN
+--------------------------------------------- */
 
-  useEffect(() => {
+useEffect(() => {
   if (!mapContainer.current) return
 
   const map = new Map({
@@ -5359,7 +6100,20 @@ const trackRef = useRef([])
             'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           ],
           tileSize: 256,
-          attribution: '© OpenStreetMap contributors',
+          attribution:
+            '© OpenStreetMap contributors',
+        },
+
+        waymarkedMtb: {
+          type: 'raster',
+          tiles: [
+            'https://tile.waymarkedtrails.org/mtb/{z}/{x}/{y}.png',
+          ],
+          tileSize: 256,
+          minzoom: 1,
+          maxzoom: 18,
+          attribution:
+            '© Waymarked Trails | © OpenStreetMap contributors',
         },
       },
 
@@ -5368,6 +6122,15 @@ const trackRef = useRef([])
           id: 'osm',
           type: 'raster',
           source: 'osm',
+        },
+
+        {
+          id: 'waymarked-mtb',
+          type: 'raster',
+          source: 'waymarkedMtb',
+          paint: {
+            'raster-opacity': 1,
+          },
         },
       ],
     },
@@ -5398,7 +6161,11 @@ const trackRef = useRef([])
     }
   }
 
-  map.on('load', resizeMap)
+  map.on('load', () => {
+  resizeMap()
+
+  loadOsmMtbTrails(map)
+})
 
   // Falls der Kartenbereich durch Navigation erst später sichtbar wird
   setTimeout(resizeMap, 100)
@@ -5406,11 +6173,21 @@ const trackRef = useRef([])
   setTimeout(resizeMap, 1000)
 
   window.addEventListener('resize', resizeMap)
-  window.addEventListener('orientationchange', resizeMap)
+  window.addEventListener(
+    'orientationchange',
+    resizeMap
+  )
 
   return () => {
-    window.removeEventListener('resize', resizeMap)
-    window.removeEventListener('orientationchange', resizeMap)
+    window.removeEventListener(
+      'resize',
+      resizeMap
+    )
+
+    window.removeEventListener(
+      'orientationchange',
+      resizeMap
+    )
 
     map.remove()
     mapRef.current = null

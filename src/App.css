@@ -8625,3 +8625,147 @@ body::after {
     gap: 0;
   }
 }
+/* =====================================================
+   AUTH — PASSWORT / LOGIN
+===================================================== */
+
+.auth-logo-subtitle {
+  margin-top: -12px;
+  margin-bottom: 22px;
+
+  font-family: Orbitron, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.45em;
+
+  color: rgba(165, 245, 26, 0.55);
+
+  text-align: center;
+}
+
+.auth-password-label {
+  margin-top: 18px;
+}
+
+.auth-switch-container {
+  margin-top: 22px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.auth-switch {
+  border: 0;
+  background: transparent;
+
+  padding: 4px 8px;
+
+  font-family: Orbitron, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+
+  color: #a5f51a;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    text-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.auth-switch:hover {
+  color: #d8ff8a;
+
+  text-shadow:
+    0 0 8px rgba(165, 245, 26, 0.8),
+    0 0 18px rgba(165, 245, 26, 0.4);
+
+  transform: translateY(-1px);
+}
+
+.auth-switch:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+@media (max-width: 600px) {
+
+  .auth-card {
+    width: calc(100% - 32px);
+    max-width: 430px;
+    padding: 28px 22px;
+  }
+
+  .auth-logo-subtitle {
+    font-size: 9px;
+    letter-spacing: 0.35em;
+  }
+
+  .auth-password-label {
+    margin-top: 16px;
+  }
+
+  .auth-switch-container {
+    font-size: 12px;
+  }
+}
+/* =====================================================
+   PASSWORT — AUGE
+===================================================== */
+
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrapper .password-input {
+  width: 100%;
+  padding-right: 52px;
+}
+
+.password-eye {
+  position: absolute;
+
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  background: transparent;
+
+  font-size: 19px;
+
+  cursor: pointer;
+
+  opacity: 0.65;
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.password-eye:hover {
+  opacity: 1;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.password-eye:active {
+  transform: translateY(-50%) scale(0.95);
+}
