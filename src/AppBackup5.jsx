@@ -5307,7 +5307,7 @@ const MTB_TRAIL_LAYER_IDS = [
   'osm-mtb-trails-black',
 ]
 
-const MTB_TRAIL_QUERY_MIN_ZOOM = 5
+const MTB_TRAIL_QUERY_MIN_ZOOM = 7
 
 function removeSelectedMtbTrail(map) {
   if (map.getLayer('selected-osm-mtb-trail')) {
@@ -5331,7 +5331,7 @@ function ensureMtbTrailLayers(map) {
       id: 'osm-mtb-trails-green',
       type: 'line',
       source: 'osm-mtb-trails',
-      filter: ['==', ['get', 'scale'], 0],
+      filter: ['==', ['get', 'scale'], '0'],
       layout: {
         'line-cap': 'round',
         'line-join': 'round',
@@ -5358,7 +5358,7 @@ function ensureMtbTrailLayers(map) {
       id: 'osm-mtb-trails-blue',
       type: 'line',
       source: 'osm-mtb-trails',
-      filter: ['==', ['get', 'scale'], 1],
+      filter: ['==', ['get', 'scale'], '1'],
       layout: {
         'line-cap': 'round',
         'line-join': 'round',
@@ -5385,7 +5385,7 @@ function ensureMtbTrailLayers(map) {
       id: 'osm-mtb-trails-red',
       type: 'line',
       source: 'osm-mtb-trails',
-      filter: ['==', ['get', 'scale'], 2],
+      filter: ['==', ['get', 'scale'], '2'],
       layout: {
         'line-cap': 'round',
         'line-join': 'round',
@@ -5451,35 +5451,16 @@ function ensureMtbTrailLayers(map) {
           'interpolate',
           ['linear'],
           ['zoom'],
-          5, 16,
-          7, 18,
-          10, 20,
-          13, 22,
-          16, 24,
-          19, 28,
+          7, 14,
+          10, 14,
+          13, 16,
+          16, 20,
+          19, 24,
         ],
         'line-opacity': 0.001,
       },
     })
   }
-}
-
-
-function updateMtbTrailVisibility(map, visibility) {
-  if (!map || !map.loaded()) return
-
-  const layerVisibility = {
-    'osm-mtb-trails-green': visibility.green ? 'visible' : 'none',
-    'osm-mtb-trails-blue': visibility.blue ? 'visible' : 'none',
-    'osm-mtb-trails-red': visibility.red ? 'visible' : 'none',
-    'osm-mtb-trails-black': visibility.black ? 'visible' : 'none',
-  }
-
-  Object.entries(layerVisibility).forEach(([layerId, value]) => {
-    if (map.getLayer(layerId)) {
-      map.setLayoutProperty(layerId, 'visibility', value)
-    }
-  })
 }
 
 async function loadOsmMtbTrails(map) {
@@ -5491,6 +5472,11 @@ async function loadOsmMtbTrails(map) {
   const source = map.getSource('osm-mtb-trails')
 
   if (zoom < MTB_TRAIL_QUERY_MIN_ZOOM) {
+    source.setData({
+      type: 'FeatureCollection',
+      features: [],
+    })
+    removeSelectedMtbTrail(map)
     return
   }
 
@@ -5552,7 +5538,7 @@ out tags geom;
       const match = String(rawScale).match(/[0-6]/)
       if (!match) continue
 
-      const scale = Number(match[0])
+      const scale = match[0]
       seenIds.add(element.id)
 
       features.push({
@@ -5595,28 +5581,8 @@ function installMtbTrailClickHandlers(map) {
   if (map.__mtbTrailHandlersInstalled) return
   map.__mtbTrailHandlersInstalled = true
 
-  const getTrailFeaturesAtPoint = (point) => {
-    const layers = [
-      'osm-mtb-trails-hitbox',
-      ...MTB_TRAIL_LAYER_IDS,
-    ].filter((id) => map.getLayer(id))
-
-    if (!layers.length) return []
-
-    return map.queryRenderedFeatures(point, { layers })
-  }
-
-  const handleTrailClick = (event) => {
-    const features = getTrailFeaturesAtPoint(event.point)
-    if (!features.length) return
-
-    // Bevorzugt die unsichtbare breite Klickfläche.
-    // Falls sie nicht gerendert wurde, funktioniert der Klick
-    // trotzdem über die sichtbaren Trail-Layer.
-    const feature =
-      features.find((item) => item.layer?.id === 'osm-mtb-trails-hitbox') ||
-      features[0]
-
+  map.on('click', 'osm-mtb-trails-hitbox', (event) => {
+    const feature = event.features?.[0]
     if (!feature) return
 
     const properties = feature.properties || {}
@@ -5661,11 +5627,10 @@ function installMtbTrailClickHandlers(map) {
             'interpolate',
             ['linear'],
             ['zoom'],
-            7, 4,
-            10, 6,
-            13, 8,
-            16, 11,
-            19, 15,
+            10, 5,
+            13, 7,
+            16, 10,
+            19, 14,
           ],
           'line-opacity': 1,
           'line-blur': 0.25,
@@ -5688,27 +5653,15 @@ function installMtbTrailClickHandlers(map) {
         </div>
       `)
       .addTo(map)
-  }
-
-  // Globaler Klick-Handler als Fallback. Dadurch ist der Trail
-  // auch dann anklickbar, wenn MapLibre den Klick nicht direkt
-  // einem einzelnen Layer zuordnet.
-  map.on('click', handleTrailClick)
-
-  // Cursor auf Desktop/Trackpad.
-  map.on('mousemove', (event) => {
-    const features = getTrailFeaturesAtPoint(event.point)
-    map.getCanvas().style.cursor = features.length
-      ? 'pointer'
-      : ''
   })
 
-  // Zusätzlich direkte Layer-Handler für MapLibre.
-  MTB_TRAIL_LAYER_IDS.forEach((layerId) => {
-    map.on('click', layerId, handleTrailClick)
+  map.on('mouseenter', 'osm-mtb-trails-hitbox', () => {
+    map.getCanvas().style.cursor = 'pointer'
   })
 
-  map.on('click', 'osm-mtb-trails-hitbox', handleTrailClick)
+  map.on('mouseleave', 'osm-mtb-trails-hitbox', () => {
+    map.getCanvas().style.cursor = ''
+  })
 }
 
 function setupMtbTrailLoading(map) {
@@ -5728,12 +5681,6 @@ function setupMtbTrailLoading(map) {
   map.on('load', () => {
     ensureMtbTrailLayers(map)
     installMtbTrailClickHandlers(map)
-    updateMtbTrailVisibility(map, {
-      green: true,
-      blue: true,
-      red: true,
-      black: true,
-    })
     schedule(0)
   })
 
@@ -5780,10 +5727,6 @@ const [locationError, setLocationError] = useState(false)
 const [search, setSearch] = useState('')
 const [selectedPark, setSelectedPark] = useState(null)
 const [showBikeparks, setShowBikeparks] = useState(true)
-const [showGreenTrails, setShowGreenTrails] = useState(true)
-const [showBlueTrails, setShowBlueTrails] = useState(true)
-const [showRedTrails, setShowRedTrails] = useState(true)
-const [showBlackTrails, setShowBlackTrails] = useState(true)
 
 const [isRecording, setIsRecording] = useState(false)
 const [tourDistance, setTourDistance] = useState(0)
@@ -5875,35 +5818,6 @@ useEffect(() => {
     mapRef.current = null
   }
 }, [])
-
-  /* ---------------------------------------------
-     TRAIL-FARBEN EIN/AUS
-  --------------------------------------------- */
-
-  useEffect(() => {
-    const map = mapRef.current
-
-    if (!map) return
-
-    const applyVisibility = () => {
-      updateMtbTrailVisibility(map, {
-        green: showGreenTrails,
-        blue: showBlueTrails,
-        red: showRedTrails,
-        black: showBlackTrails,
-      })
-    }
-
-    if (map.loaded()) {
-      applyVisibility()
-    } else {
-      map.once('load', applyVisibility)
-    }
-
-    return () => {
-      map.off('load', applyVisibility)
-    }
-  }, [showGreenTrails, showBlueTrails, showRedTrails, showBlackTrails])
 
  /* ---------------------------------------------
    GPS TRACKING
@@ -6190,8 +6104,8 @@ if (isRecording) {
           aria-pressed={showBikeparks}
           type="button"
         >
-          <span className="toggle-eye">
-            {showBikeparks ? '👁️' : '🙈'}
+          <span className="toggle-dot">
+            {showBikeparks ? '✓' : '○'}
           </span>
 
           🚵 Gravity Card Parks
@@ -6200,84 +6114,6 @@ if (isRecording) {
         <span className="bikepark-count">
           {filteredParks.length} / 32 Parks
         </span>
-      </div>
-
-      <div
-        className="trail-filter-row"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '8px',
-          marginBottom: '12px',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setShowGreenTrails((value) => !value)}
-          aria-pressed={showGreenTrails}
-          style={{
-            border: `1px solid ${showGreenTrails ? 'rgba(57, 211, 83, 0.65)' : 'rgba(255,255,255,0.12)'}`,
-            background: showGreenTrails ? 'rgba(57, 211, 83, 0.14)' : 'rgba(255,255,255,0.04)',
-            color: showGreenTrails ? '#39D353' : 'rgba(255,255,255,0.45)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontWeight: 800,
-            cursor: 'pointer',
-          }}
-        >
-          🟢 {showGreenTrails ? 'S0 an' : 'S0 aus'}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowBlueTrails((value) => !value)}
-          aria-pressed={showBlueTrails}
-          style={{
-            border: `1px solid ${showBlueTrails ? 'rgba(22, 140, 255, 0.65)' : 'rgba(255,255,255,0.12)'}`,
-            background: showBlueTrails ? 'rgba(22, 140, 255, 0.14)' : 'rgba(255,255,255,0.04)',
-            color: showBlueTrails ? '#168CFF' : 'rgba(255,255,255,0.45)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontWeight: 800,
-            cursor: 'pointer',
-          }}
-        >
-          🔵 {showBlueTrails ? 'S1 an' : 'S1 aus'}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowRedTrails((value) => !value)}
-          aria-pressed={showRedTrails}
-          style={{
-            border: `1px solid ${showRedTrails ? 'rgba(255, 48, 48, 0.65)' : 'rgba(255,255,255,0.12)'}`,
-            background: showRedTrails ? 'rgba(255, 48, 48, 0.14)' : 'rgba(255,255,255,0.04)',
-            color: showRedTrails ? '#FF3030' : 'rgba(255,255,255,0.45)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontWeight: 800,
-            cursor: 'pointer',
-          }}
-        >
-          🔴 {showRedTrails ? 'S2 an' : 'S2 aus'}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowBlackTrails((value) => !value)}
-          aria-pressed={showBlackTrails}
-          style={{
-            border: `1px solid ${showBlackTrails ? 'rgba(17, 17, 17, 0.9)' : 'rgba(255,255,255,0.12)'}`,
-            background: showBlackTrails ? 'rgba(17, 17, 17, 0.55)' : 'rgba(255,255,255,0.04)',
-            color: showBlackTrails ? '#ffffff' : 'rgba(255,255,255,0.45)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontWeight: 800,
-            cursor: 'pointer',
-          }}
-        >
-          ⚫ {showBlackTrails ? 'S3–S6 an' : 'S3–S6 aus'}
-        </button>
       </div>
 
 {/* =====================================================

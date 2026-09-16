@@ -8769,3 +8769,360 @@ body::after {
 .password-eye:active {
   transform: translateY(-50%) scale(0.95);
 }
+/* =====================================================
+   WAYMARKED MTB MAP
+===================================================== */
+
+.waymarked-map-container {
+  position: relative;
+  width: 100%;
+  height: 650px;
+  min-height: 500px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #101510;
+  border: 1px solid rgba(57, 255, 20, 0.18);
+}
+
+.waymarked-map-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #101510;
+}
+
+.waymarked-map-overlay {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 9px 13px;
+
+  background: rgba(8, 12, 9, 0.88);
+  border: 1px solid rgba(57, 255, 20, 0.35);
+  border-radius: 12px;
+
+  color: #fff;
+
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+
+.waymarked-map-overlay span {
+  font-size: 18px;
+}
+
+.waymarked-map-overlay strong {
+  color: #a5f51a;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.waymarked-map-overlay small {
+  color: #8b958c;
+  font-size: 11px;
+}
+
+@media (max-width: 700px) {
+  .waymarked-map-container {
+    height: 560px;
+    min-height: 450px;
+    border-radius: 16px;
+  }
+
+  .waymarked-map-overlay {
+    top: 10px;
+    left: 10px;
+  }
+}
+/* =====================================================
+   WAYMARKED TRAILS MAP
+===================================================== */
+
+.waymarked-map-container {
+  position: relative;
+  width: 100%;
+  height: 620px;
+  min-height: 500px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #07100a;
+  border: 1px solid rgba(150, 255, 30, 0.25);
+}
+
+.waymarked-map-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  border: 0;
+  background: #07100a;
+}
+
+.waymarked-map-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 10px 14px;
+
+  border-radius: 12px;
+
+  background: rgba(5, 12, 7, 0.88);
+  border: 1px solid rgba(150, 255, 30, 0.35);
+
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.waymarked-map-overlay span {
+  font-size: 20px;
+}
+
+.waymarked-map-overlay strong {
+  color: #a5f51a;
+  font-size: 14px;
+}
+
+.waymarked-map-overlay small {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+}
+
+
+/* =====================================================
+   BIKEPARK CARD
+===================================================== */
+
+.bikepark-card {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 20;
+
+  width: min(360px, calc(100% - 40px));
+  box-sizing: border-box;
+
+  padding: 20px;
+
+  border-radius: 18px;
+
+  background: rgba(8, 16, 10, 0.96);
+  border: 1px solid rgba(165, 245, 26, 0.35);
+
+  box-shadow:
+    0 15px 45px rgba(0, 0, 0, 0.55),
+    0 0 25px rgba(120, 255, 20, 0.08);
+
+  backdrop-filter: blur(14px);
+}
+
+.bikepark-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+
+  width: 32px;
+  height: 32px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+
+  font-size: 22px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.bikepark-close:hover {
+  background: rgba(165, 245, 26, 0.2);
+  color: #a5f51a;
+}
+
+.bikepark-card-icon {
+  font-size: 38px;
+  margin-bottom: 8px;
+}
+
+.bikepark-card-content {
+  padding-right: 25px;
+}
+
+.bikepark-label {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #a5f51a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.bikepark-card-content h3 {
+  margin: 0 0 7px;
+
+  color: white;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.bikepark-card-content p {
+  margin: 0 0 14px;
+
+  color: rgba(255, 255, 255, 0.65);
+}
+
+
+/* =====================================================
+   SELECTED TRAILS
+===================================================== */
+
+.selected-trails {
+  margin-top: 12px;
+}
+
+.selected-trails > strong {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: white;
+  font-size: 13px;
+}
+
+.selected-trails > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.selected-trails span {
+  display: inline-block;
+
+  padding: 6px 9px;
+
+  border-radius: 8px;
+
+  background: rgba(165, 245, 26, 0.1);
+  border: 1px solid rgba(165, 245, 26, 0.2);
+
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+}
+
+
+/* =====================================================
+   OFFIZIELLE WEBSEITE
+===================================================== */
+
+.park-website-button {
+  width: 100%;
+
+  margin-top: 15px;
+  padding: 11px 14px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: #a5f51a;
+  color: #081008;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+.park-website-button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .waymarked-map-container {
+    height: 500px;
+    min-height: 400px;
+    border-radius: 16px;
+  }
+
+  .waymarked-map-frame {
+    min-height: 400px;
+  }
+
+  .waymarked-map-overlay {
+    top: 10px;
+    left: 10px;
+    padding: 8px 10px;
+  }
+
+  .bikepark-card {
+    right: 10px;
+    bottom: 10px;
+
+    width: calc(100% - 20px);
+
+    padding: 16px;
+  }
+
+}
+/* =====================================================
+   WAYMARKED MTB MAP
+===================================================== */
+
+.waymarked-map-container {
+  position: relative;
+  width: 100%;
+  height: 650px;
+  min-height: 500px;
+  overflow: hidden;
+
+  border-radius: 22px;
+
+  background: #101510;
+  border: 1px solid rgba(57, 255, 20, 0.18);
+}
+
+.waymarked-map-frame {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  border: 0;
+
+  background: #101510;
+}
+
+@media (max-width: 700px) {
+
+  .waymarked-map-container {
+    height: 560px;
+    min-height: 450px;
+    border-radius: 16px;
+  }
+
+}
