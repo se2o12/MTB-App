@@ -6496,7 +6496,7 @@ function MapPage() {
     useRef([])
 
 
-  /* ===================================================
+/* ===================================================
    KARTE ERSTELLEN
 =================================================== */
 
@@ -6532,9 +6532,6 @@ useEffect(() => {
             ],
 
             tileSize: 256,
-
-            attribution:
-              '© Thunderforest | © OpenStreetMap contributors',
           },
         },
 
@@ -6548,20 +6545,6 @@ useEffect(() => {
 
             source:
               'thunderforest',
-
-            minzoom:
-              0,
-
-            maxzoom:
-              22,
-
-            paint: {
-              'raster-opacity':
-                1,
-
-              'raster-fade-duration':
-                0,
-            },
           },
         ],
       },
@@ -6585,18 +6568,17 @@ useEffect(() => {
 
       touchZoomRotate:
         true,
-
-      preserveDrawingBuffer:
-        false,
     })
 
   mapRef.current =
     map
 
+  /* ===================================================
+     ZOOM ANZEIGE
+  =================================================== */
+
   const updateZoomDisplay =
     () => {
-      if (!map) return
-
       setMapZoom(
         map.getZoom()
       )
@@ -6616,28 +6598,13 @@ useEffect(() => {
     map.getZoom()
   )
 
-  /*
-    ---------------------------------------------------
-    MAP RESIZE
-    ---------------------------------------------------
-
-    Besonders wichtig auf Handy:
-    MapLibre kann beim ersten Rendern
-    eine falsche Containergröße erkennen.
-
-    Deshalb resize:
-    - beim Laden
-    - kurz danach
-    - bei Fensteränderung
-    - bei Orientierung
-  */
+  /* ===================================================
+     MAP RESIZE
+  =================================================== */
 
   const resizeMap =
     () => {
-      if (
-        mapRef.current &&
-        map.loaded()
-      ) {
+      if (mapRef.current) {
         mapRef.current.resize()
       }
     }
@@ -6654,12 +6621,12 @@ useEffect(() => {
 
       window.setTimeout(
         resizeMap,
-        300
+        500
       )
 
       window.setTimeout(
         resizeMap,
-        700
+        1000
       )
     }
   )
@@ -6692,13 +6659,18 @@ useEffect(() => {
     resizeMap
   )
 
-  /*
-    MTB-Trails erst danach initialisieren.
-  */
+  /* ===================================================
+     MTB-TRAILS
+  =================================================== */
+
   const cleanupMtbTrailLoading =
     setupMtbTrailLoading(
       map
     )
+
+  /* ===================================================
+     CLEANUP
+  =================================================== */
 
   return () => {
     window.clearTimeout(
@@ -6756,11 +6728,6 @@ useEffect(() => {
       null
   }
 }, [])
-
-
-  /* ===================================================
-     FULLSCREEN / NORMAL RESIZE
-  =================================================== */
 
   useEffect(() => {
     const map =
