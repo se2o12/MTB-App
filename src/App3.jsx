@@ -9,6 +9,7 @@ import {
   Map,
   NavigationControl,
   Marker,
+  Popup,
   LngLatBounds,
   setWorkerUrl,
 } from 'maplibre-gl'
@@ -772,6 +773,43 @@ const getRankFromXP = (xp) => {
 /* =====================================================
    APP
 ===================================================== */
+function MTBCommunityLoader({ onFinished }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onFinished()
+    }, 3400)
+
+    return () => clearTimeout(timer)
+  }, [onFinished])
+
+  return (
+    <div className="mtb-loader-screen">
+      <div className="mtb-loader-content">
+
+        <div className="mtb-loader-title">
+  <span className="mtb-loader-base">
+    <span>MTB</span>
+    <span>COMMUNITY</span>
+  </span>
+
+  <span className="mtb-loader-fill">
+    <span>MTB</span>
+    <span>COMMUNITY</span>
+  </span>
+</div>
+
+        <div className="mtb-loader-line">
+          <div className="mtb-loader-line-fill" />
+        </div>
+
+        <div className="mtb-loader-subtitle">
+          RIDING THE NEXT LINE
+        </div>
+
+      </div>
+    </div>
+  )
+}
 
 function App() {
     useEffect(() => {
@@ -796,6 +834,8 @@ function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showStartupLoader, setShowStartupLoader] =
+  useState(false)
   const [activePage, setActivePage] = useState('home')
   const [finishedTour, setFinishedTour] = useState(null)
   const [activeChat, setActiveChat] = useState(null)
@@ -843,6 +883,12 @@ function App() {
       subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+  if (!loading && session) {
+    setShowStartupLoader(true)
+  }
+}, [loading, session])
 
   useEffect(() => {
   if (!session?.user) {
@@ -1171,13 +1217,80 @@ const checkForNewMessage = async () => {
     loadProfile(session.user.id)
   }, [session])
 
+  const uploadProfileImage = async (imageData) => {
+    if (!imageData) return null
+
+    // Already-uploaded URL: nothing to upload again.
+    if (!imageData.startsWith('data:image/')) {
+      return imageData
+    }
+
+    try {
+      const response = await fetch(imageData)
+      const blob = await response.blob()
+
+      const filePath =
+        `${session.user.id}/avatar-${Date.now()}.jpg`
+
+      const { error: uploadError } =
+        await supabase.storage
+          .from('profile-images')
+          .upload(filePath, blob, {
+            contentType: 'image/jpeg',
+            cacheControl: '3600',
+            upsert: false,
+          })
+
+      if (uploadError) {
+        console.error(
+          'Profilbild-Upload fehlgeschlagen:',
+          uploadError
+        )
+        alert(
+          'Profilbild konnte nicht hochgeladen werden: ' +
+            uploadError.message
+        )
+        return null
+      }
+
+      const { data: publicUrlData } =
+        supabase.storage
+          .from('profile-images')
+          .getPublicUrl(filePath)
+
+      return publicUrlData.publicUrl
+    } catch (error) {
+      console.error(
+        'Profilbild-Upload fehlgeschlagen:',
+        error
+      )
+      alert(
+        'Profilbild konnte nicht hochgeladen werden.'
+      )
+      return null
+    }
+  }
+
   const saveProfile = async (newProfile) => {
     if (!session?.user) return
+
+    const uploadedImage =
+      await uploadProfileImage(newProfile.image)
+
+    // If a new image was selected but the upload failed,
+    // don't overwrite the existing profile picture.
+    if (
+      newProfile.image &&
+      newProfile.image.startsWith('data:image/') &&
+      !uploadedImage
+    ) {
+      return
+    }
 
     const profileData = {
       id: session.user.id,
       name: newProfile.name,
-      image: newProfile.image || null,
+      image: uploadedImage || null,
       points: newProfile.points ?? 0,
       level: newProfile.level ?? 1,
       rank: newProfile.rank ?? 'Trail Rider',
@@ -1247,15 +1360,25 @@ const checkForNewMessage = async () => {
   }
 
   if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-logo">
-          <span>⌁</span> MTB
-        </div>
-        <p>Wird geladen...</p>
+  return (
+    <div className="loading-screen">
+      <div className="loading-logo">
+        <span>⌁</span> MTB
       </div>
-    )
-  }
+      <p>Wird geladen...</p>
+    </div>
+  )
+}
+
+if (showStartupLoader) {
+  return (
+    <MTBCommunityLoader
+      onFinished={() =>
+        setShowStartupLoader(false)
+      }
+    />
+  )
+}
 
   if (!session) {
     return <AuthPage />
@@ -1456,17 +1579,20 @@ const checkForNewMessage = async () => {
 
 /* =====================================================
    LOGIN / REGISTRIERUNG
-   E-MAIL + EINMAL-CODE
+   E-MAIL + PASSWORT
 ===================================================== */
 
 function AuthPage() {
   const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
-  const [step, setStep] = useState('email')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [mode, setMode] = useState('login')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  const sendCode = async (event) => {
+  const isLogin = mode === 'login'
+
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
     const cleanEmail = email.trim().toLowerCase()
@@ -1478,265 +1604,229 @@ function AuthPage() {
       return
     }
 
-    setLoading(true)
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: {
-        shouldCreateUser: true,
-      },
-    })
-
-    if (error) {
-      console.error('OTP senden:', error)
-
-      setMessage(
-        'Code konnte nicht gesendet werden: ' +
-          error.message
-      )
-    } else {
-      setStep('code')
-      setMessage(
-        'Wir haben dir einen Code per E-Mail geschickt.'
-      )
+    if (!password) {
+      setMessage('Bitte dein Passwort eingeben.')
+      return
     }
 
-    setLoading(false)
-  }
-
-  const verifyCode = async (event) => {
-    event.preventDefault()
-
-    const cleanEmail = email.trim().toLowerCase()
-    const cleanCode = code.trim()
-
-    setMessage('')
-
-    if (!cleanCode) {
-      setMessage('Bitte den Code eingeben.')
+    if (password.length < 6) {
+      setMessage(
+        'Das Passwort muss mindestens 6 Zeichen lang sein.'
+      )
       return
     }
 
     setLoading(true)
 
-    const { data, error } =
-      await supabase.auth.verifyOtp({
-        email: cleanEmail,
-        token: cleanCode,
-        type: 'email',
-      })
+    if (isLogin) {
+      const { error } =
+        await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        })
 
-    if (error) {
-      console.error('OTP bestätigen:', error)
+      if (error) {
+        console.error('Login:', error)
 
-      setMessage(
-        'Der Code ist ungültig oder abgelaufen.'
-      )
-
-      setLoading(false)
-      return
-    }
-
-    if (data.session) {
-      console.log('Login erfolgreich')
-    }
-
-    setLoading(false)
-  }
-
-  const resendCode = async () => {
-    const cleanEmail = email.trim().toLowerCase()
-
-    if (!cleanEmail) return
-
-    setLoading(true)
-    setMessage('')
-
-    const { error } =
-      await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-          shouldCreateUser: true,
-        },
-      })
-
-    if (error) {
-      setMessage(
-        'Code konnte nicht erneut gesendet werden: ' +
-          error.message
-      )
+        setMessage(
+          'Anmeldung fehlgeschlagen: ' +
+            error.message
+        )
+      }
     } else {
-      setMessage(
-        'Ein neuer Code wurde an deine E-Mail gesendet.'
-      )
+      const { data, error } =
+        await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+        })
+
+      if (error) {
+        console.error('Registrierung:', error)
+
+        setMessage(
+          'Registrierung fehlgeschlagen: ' +
+            error.message
+        )
+      } else if (!data.session) {
+        setMessage(
+          'Account erstellt. Falls Supabase eine E-Mail-Bestätigung verlangt, bestätige zuerst deine E-Mail-Adresse.'
+        )
+      }
     }
 
     setLoading(false)
   }
 
-  const changeEmail = () => {
-    setStep('email')
-    setCode('')
+  const switchMode = () => {
+    setMode(
+      isLogin
+        ? 'register'
+        : 'login'
+    )
+
     setMessage('')
+    setPassword('')
   }
 
   return (
     <div className="auth-screen">
+
       <div className="auth-card">
+
+        {/* =====================================================
+           LOGO
+        ===================================================== */}
 
         <div className="setup-logo">
           <span>⌁</span>
           MTB
         </div>
 
-        <div className="auth-badge">
-          {step === 'email' ? '✉️' : '🔐'}
+        <div className="auth-logo-subtitle">
+          COMMUNITY
         </div>
 
-        {step === 'email' ? (
-          <>
-            <h1>
-              Willkommen! 👋
-            </h1>
+        {/* =====================================================
+           ICON
+        ===================================================== */}
 
-            <p className="setup-description">
-              Gib deine E-Mail-Adresse ein und
-              wir schicken dir einen Anmeldecode.
-            </p>
+        <div className="auth-badge">
+          {isLogin ? '🔐' : '🚵'}
+        </div>
 
-            <form onSubmit={sendCode}>
+        {/* =====================================================
+           TITEL
+        ===================================================== */}
 
-              <label className="input-label">
-                E-MAIL
-              </label>
+        <h1>
+          {isLogin
+            ? 'Willkommen zurück! 👋'
+            : 'MTB Community 🚵'}
+        </h1>
 
-              <input
-                className="name-input"
-                type="email"
-                placeholder="deine@email.de"
-                value={email}
-                autoComplete="email"
-                onChange={(event) =>
-                  setEmail(event.target.value)
-                }
-                autoFocus
-              />
-
-              {message && (
-                <div className="auth-message">
-                  {message}
-                </div>
-              )}
-
-              <button
-                className="create-button"
-                type="submit"
-                disabled={loading}
-              >
-                {loading
-                  ? 'CODE WIRD GESENDET...'
-                  : 'CODE ANFORDERN'}
-
-                {!loading && (
-                  <span>→</span>
-                )}
-              </button>
-
-            </form>
-          </>
-        ) : (
-          <>
-            <h1>
-              Code eingeben 🔐
-            </h1>
-
-            <p className="setup-description">
-              Wir haben einen Anmeldecode an
-              <strong> {email}</strong> geschickt.
-            </p>
-
-            <form onSubmit={verifyCode}>
-
-              <label className="input-label">
-                ANMELDECODE
-              </label>
-
-              <input
-                className="name-input auth-code-input"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="123456"
-                value={code}
-                maxLength={8}
-                onChange={(event) =>
-                  setCode(
-                    event.target.value.replace(
-                      /\D/g,
-                      ''
-                    )
-                  )
-                }
-                autoFocus
-              />
-
-              {message && (
-                <div className="auth-message">
-                  {message}
-                </div>
-              )}
-
-              <button
-                className="create-button"
-                type="submit"
-                disabled={
-                  loading ||
-                  code.length < 6
-                }
-              >
-                {loading
-                  ? 'WIRD ANGEMELDET...'
-                  : 'ANMELDEN'}
-
-                {!loading && (
-                  <span>→</span>
-                )}
-              </button>
-
-            </form>
-
-            <div className="auth-code-actions">
-
-              <button
-                className="auth-switch"
-                type="button"
-                onClick={resendCode}
-                disabled={loading}
-              >
-                Code erneut senden
-              </button>
-
-              <button
-                className="auth-switch"
-                type="button"
-                onClick={changeEmail}
-                disabled={loading}
-              >
-                ← Andere E-Mail verwenden
-              </button>
-
-            </div>
-          </>
-        )}
-
-        <p className="privacy-note">
-          Kostenlos anmelden · Kein Passwort notwendig
+        <p className="setup-description">
+          {isLogin
+            ? 'Melde dich an und fahr mit deiner Community los.'
+            : 'Erstelle deinen kostenlosen Account und werde Teil der Community.'}
         </p>
 
+        {/* =====================================================
+           FORMULAR
+        ===================================================== */}
+
+        <form onSubmit={handleSubmit}>
+
+          <label className="input-label">
+            E-MAIL
+          </label>
+
+          <input
+            className="name-input"
+            type="email"
+            placeholder="deine@email.de"
+            value={email}
+            autoComplete="email"
+            onChange={(event) =>
+              setEmail(event.target.value)
+            }
+            autoFocus
+          />
+
+          <label className="input-label auth-password-label">
+            PASSWORT
+          </label>
+
+          <div className="password-input-wrapper">
+
+  <input
+    className="name-input password-input"
+    type={showPassword ? 'text' : 'password'}
+    placeholder="Mindestens 6 Zeichen"
+    value={password}
+    autoComplete={
+      isLogin
+        ? 'current-password'
+        : 'new-password'
+    }
+    onChange={(event) =>
+      setPassword(event.target.value)
+    }
+  />
+
+  <button
+    type="button"
+    className="password-eye"
+    onClick={() =>
+      setShowPassword((current) => !current)
+    }
+    aria-label={
+      showPassword
+        ? 'Passwort verbergen'
+        : 'Passwort anzeigen'
+    }
+  >
+    {showPassword ? '🙈' : '👁️'}
+  </button>
+
+</div>
+
+          {message && (
+            <div className="auth-message">
+              {message}
+            </div>
+          )}
+
+          <button
+            className="create-button"
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? isLogin
+                ? 'WIRD ANGEMELDET...'
+                : 'ACCOUNT WIRD ERSTELLT...'
+              : isLogin
+                ? 'ANMELDEN'
+                : 'ACCOUNT ERSTELLEN'}
+
+            {!loading && (
+              <span>→</span>
+            )}
+          </button>
+
+        </form>
+
+        {/* =====================================================
+           MODUS WECHSELN
+        ===================================================== */}
+
+        <div className="auth-switch-container">
+
+          <span>
+            {isLogin
+              ? 'Noch keinen Account?'
+              : 'Du hast bereits einen Account?'}
+          </span>
+
+          <button
+            className="auth-switch"
+            type="button"
+            onClick={switchMode}
+            disabled={loading}
+          >
+            {isLogin
+              ? 'Jetzt registrieren'
+              : 'Jetzt anmelden'}
+          </button>
+
+        </div>
+
       </div>
+
     </div>
   )
 }
+
 
 /* =====================================================
    PROFIL SETUP
@@ -2486,56 +2576,56 @@ function TourDetailPage({
     if (!mapContainer.current) return
 
     const rawCoordinates =
-  tour.path ||
-  tour.route ||
-  tour.track ||
-  tour.coordinates ||
-  []
+      tour.path ||
+      tour.route ||
+      tour.track ||
+      tour.coordinates ||
+      []
 
-const coordinates = Array.isArray(rawCoordinates)
-  ? rawCoordinates
-      .map((point) => {
-        // GPS-Punkt als Objekt
-        if (
-          point &&
-          typeof point === 'object' &&
-          !Array.isArray(point)
-        ) {
-          const lat = Number(point.lat)
-          const lon = Number(
-            point.lon ?? point.lng
-          )
+    const coordinates = Array.isArray(rawCoordinates)
+      ? rawCoordinates
+          .map((point) => {
+            // GPS-Punkt als Objekt
+            if (
+              point &&
+              typeof point === 'object' &&
+              !Array.isArray(point)
+            ) {
+              const lat = Number(point.lat)
+              const lon = Number(
+                point.lon ?? point.lng
+              )
 
-          if (
-            Number.isFinite(lat) &&
-            Number.isFinite(lon)
-          ) {
-            return [lon, lat]
-          }
+              if (
+                Number.isFinite(lat) &&
+                Number.isFinite(lon)
+              ) {
+                return [lon, lat]
+              }
 
-          return null
-        }
+              return null
+            }
 
-        // Bereits im MapLibre-Format [lon, lat]
-        if (
-          Array.isArray(point) &&
-          point.length >= 2
-        ) {
-          const lon = Number(point[0])
-          const lat = Number(point[1])
+            // Bereits im MapLibre-Format [lon, lat]
+            if (
+              Array.isArray(point) &&
+              point.length >= 2
+            ) {
+              const lon = Number(point[0])
+              const lat = Number(point[1])
 
-          if (
-            Number.isFinite(lon) &&
-            Number.isFinite(lat)
-          ) {
-            return [lon, lat]
-          }
-        }
+              if (
+                Number.isFinite(lon) &&
+                Number.isFinite(lat)
+              ) {
+                return [lon, lat]
+              }
+            }
 
-        return null
-      })
-      .filter(Boolean)
-  : []
+            return null
+          })
+          .filter(Boolean)
+      : []
 
     if (
       !Array.isArray(coordinates) ||
@@ -2547,32 +2637,9 @@ const coordinates = Array.isArray(rawCoordinates)
     const map = new Map({
       container: mapContainer.current,
 
-      style: {
-        version: 8,
-
-        sources: {
-          osm: {
-            type: 'raster',
-
-            tiles: [
-              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            ],
-
-            tileSize: 256,
-
-            attribution:
-              '© OpenStreetMap contributors',
-          },
-        },
-
-        layers: [
-          {
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-          },
-        ],
-      },
+      // OpenFreeMap: OSM-basierte MapLibre-Karte ohne tile.openstreetmap.org-Raster-CORS-Probleme.
+      // OpenFreeMap: OSM-basierte MapLibre-Karte ohne tile.openstreetmap.org-Raster-CORS-Probleme.
+    style: 'https://tiles.openfreemap.org/styles/liberty',
 
       center: coordinates[0],
       zoom: 13,
@@ -2584,8 +2651,8 @@ const coordinates = Array.isArray(rawCoordinates)
 
     mapRef.current = map
 
-    map.on('load', () => {
 
+    map.on('load', () => {
       /* -----------------------------------------
          ROUTE-LINIE
       ----------------------------------------- */
@@ -2606,31 +2673,22 @@ const coordinates = Array.isArray(rawCoordinates)
       })
 
       map.addLayer({
-  id: 'tour-route-line',
-  type: 'line',
-  source: 'tour-route',
+        id: 'tour-route-line',
+        type: 'line',
+        source: 'tour-route',
 
-  layout: {
-    'line-cap': 'round',
-    'line-join': 'round',
-  },
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
 
-  paint: {
-    'line-color': '#a5f51a',
-    'line-width': 5,
-    'line-opacity': 0.95,
-    'line-blur': 0.3,
-  },
-})
-
-const smoothCoordinates = coordinates.filter((_, index) => {
-  if (index === 0 || index === coordinates.length - 1) {
-    return true
-  }
-
-  // Jeden zweiten GPS-Punkt entfernen
-  return index % 2 === 0
-})
+        paint: {
+          'line-color': '#a5f51a',
+          'line-width': 5,
+          'line-opacity': 0.95,
+          'line-blur': 0.3,
+        },
+      })
 
       /* -----------------------------------------
          STARTPUNKT
@@ -2739,6 +2797,7 @@ const smoothCoordinates = coordinates.filter((_, index) => {
 
           <div className="tour-no-route">
             🗺️
+
             <strong>
               Keine GPS-Strecke gespeichert
             </strong>
@@ -5200,6 +5259,484 @@ function TrailFinder() {
   )
 }
 
+/* =====================================================
+   🚵 MTB TRAILS AUS OPENSTREETMAP
+
+   Die Trails werden direkt als GeoJSON in unsere eigene
+   MapLibre-Karte geladen. Dadurch sind sie echte Layer
+   und können angeklickt werden.
+===================================================== */
+
+const MTB_TRAIL_COLORS = {
+  '0': '#39D353',
+  '1': '#168CFF',
+  '2': '#FF3030',
+  '3': '#111111',
+  '4': '#111111',
+  '5': '#111111',
+  '6': '#111111',
+}
+
+const MTB_TRAIL_LAYER_IDS = [
+  'osm-mtb-trails-green',
+  'osm-mtb-trails-blue',
+  'osm-mtb-trails-red',
+  'osm-mtb-trails-black',
+]
+
+const MTB_TRAIL_QUERY_MIN_ZOOM = 8
+const MTB_TRAIL_REQUEST_DELAY = 900
+const MTB_TRAIL_MIN_REQUEST_GAP = 7000
+const MTB_TRAIL_ERROR_COOLDOWN = 30000
+const MTB_TRAIL_CACHE_TTL = 5 * 60 * 1000
+const MTB_TRAIL_OVERPASS_ENDPOINTS = [
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+]
+
+function removeSelectedMtbTrail(map) {
+  if (map.getLayer('selected-osm-mtb-trail')) {
+    map.removeLayer('selected-osm-mtb-trail')
+  }
+}
+
+function ensureMtbTrailLayers(map) {
+  if (!map.getSource('osm-mtb-trails')) {
+    map.addSource('osm-mtb-trails', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    })
+  }
+
+  const lineWidth = [
+    'interpolate', ['linear'], ['zoom'],
+    8, 2, 10, 2, 13, 3, 16, 5, 19, 7,
+  ]
+
+  const addTrailLayer = (id, filter, color, opacity = 0.95) => {
+    if (map.getLayer(id)) return
+    map.addLayer({
+      id,
+      type: 'line',
+      source: 'osm-mtb-trails',
+      filter,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': color,
+        'line-width': lineWidth,
+        'line-opacity': opacity,
+      },
+    })
+  }
+
+  addTrailLayer('osm-mtb-trails-green', ['==', ['get', 'scale'], 0], MTB_TRAIL_COLORS['0'])
+  addTrailLayer('osm-mtb-trails-blue', ['==', ['get', 'scale'], 1], MTB_TRAIL_COLORS['1'])
+  addTrailLayer('osm-mtb-trails-red', ['==', ['get', 'scale'], 2], MTB_TRAIL_COLORS['2'])
+  addTrailLayer(
+    'osm-mtb-trails-black',
+    ['>=', ['to-number', ['get', 'scale']], 3],
+    MTB_TRAIL_COLORS['3'],
+    0.96,
+  )
+
+  if (!map.getLayer('osm-mtb-trails-hitbox')) {
+    map.addLayer({
+      id: 'osm-mtb-trails-hitbox',
+      type: 'line',
+      source: 'osm-mtb-trails',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': '#ffffff',
+        'line-width': [
+          'interpolate', ['linear'], ['zoom'],
+          8, 16, 10, 20, 13, 22, 16, 24, 19, 28,
+        ],
+        'line-opacity': 0.001,
+      },
+    })
+  }
+}
+
+function updateMtbTrailVisibility(map, visibility) {
+  if (!map || !map.loaded()) return
+
+  const layerVisibility = {
+    'osm-mtb-trails-green': visibility.green ? 'visible' : 'none',
+    'osm-mtb-trails-blue': visibility.blue ? 'visible' : 'none',
+    'osm-mtb-trails-red': visibility.red ? 'visible' : 'none',
+    'osm-mtb-trails-black': visibility.black ? 'visible' : 'none',
+  }
+
+  Object.entries(layerVisibility).forEach(([layerId, value]) => {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, 'visibility', value)
+    }
+  })
+}
+
+function getMtbTrailCacheKey(bounds, zoom) {
+  const round = (value, digits = 2) => {
+    const factor = 10 ** digits
+    return Math.round(value * factor) / factor
+  }
+
+  return [
+    Math.floor(zoom * 2) / 2,
+    round(bounds.getSouth()),
+    round(bounds.getWest()),
+    round(bounds.getNorth()),
+    round(bounds.getEast()),
+  ].join('|')
+}
+
+function haversineDistanceMeters(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return 0
+
+  const toRad = (value) => (value * Math.PI) / 180
+  const R = 6371008.8
+  const lat1 = toRad(Number(a[1]))
+  const lat2 = toRad(Number(b[1]))
+  const dLat = lat2 - lat1
+  const dLon = toRad(Number(b[0]) - Number(a[0]))
+
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
+
+  return 2 * R * Math.asin(Math.sqrt(Math.min(1, h)))
+}
+
+function getTrailLengthMeters(coordinates) {
+  if (!Array.isArray(coordinates) || coordinates.length < 2) return 0
+
+  let total = 0
+  for (let i = 1; i < coordinates.length; i += 1) {
+    total += haversineDistanceMeters(coordinates[i - 1], coordinates[i])
+  }
+  return total
+}
+
+function formatTrailLength(meters) {
+  if (!Number.isFinite(meters) || meters <= 0) return 'Unbekannt'
+  if (meters < 1000) return `${Math.round(meters)} m`
+  return `${(meters / 1000).toFixed(2).replace('.', ',')} km`
+}
+
+async function loadOsmMtbTrails(map, options = {}) {
+  if (!map || !map.loaded()) return false
+
+  ensureMtbTrailLayers(map)
+
+  const zoom = map.getZoom()
+  const source = map.getSource('osm-mtb-trails')
+  if (!source) return false
+
+  // Bei kleinerem Zoom wird bewusst nicht bei Overpass angefragt.
+  // Dadurch entstehen keine riesigen Europa-/Deutschland-Abfragen.
+  if (zoom < MTB_TRAIL_QUERY_MIN_ZOOM) {
+    return false
+  }
+
+  const bounds = map.getBounds()
+  const south = Math.max(-85, bounds.getSouth())
+  const west = Math.max(-180, bounds.getWest())
+  const north = Math.min(85, bounds.getNorth())
+  const east = Math.min(180, bounds.getEast())
+
+  if (!(south < north && west < east)) return false
+
+  const key = getMtbTrailCacheKey(bounds, zoom)
+  const now = Date.now()
+  const cache = window.__mtbTrailCache || (window.__mtbTrailCache = new globalThis.Map())
+  const cached = cache.get(key)
+
+  if (!options.force && cached && now - cached.time < MTB_TRAIL_CACHE_TTL) {
+    source.setData(cached.data)
+    return true
+  }
+
+  const state = window.__mtbTrailRequestState || (window.__mtbTrailRequestState = {
+    lastRequestAt: 0,
+    cooldownUntil: 0,
+    controller: null,
+    sequence: 0,
+  })
+
+  if (!options.force && now < state.cooldownUntil) {
+    return false
+  }
+
+  if (!options.force && now - state.lastRequestAt < MTB_TRAIL_MIN_REQUEST_GAP) {
+    return false
+  }
+
+  if (state.controller) {
+    state.controller.abort()
+  }
+
+  const controller = new AbortController()
+  state.controller = controller
+  state.sequence += 1
+  const requestSequence = state.sequence
+  state.lastRequestAt = now
+
+  const query = `
+[out:json][timeout:20];
+(
+  way["mtb:scale"](${south},${west},${north},${east});
+  way["mtb:scale:imba"](${south},${west},${north},${east});
+);
+out tags geom;
+`
+
+  let lastError = null
+
+  try {
+    for (const endpoint of MTB_TRAIL_OVERPASS_ENDPOINTS) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          },
+          body: 'data=' + encodeURIComponent(query),
+          signal: controller.signal,
+        })
+
+        if (!response.ok) {
+          const error = new Error(`Overpass HTTP ${response.status}`)
+          error.status = response.status
+          throw error
+        }
+
+        const data = await response.json()
+        if (requestSequence !== state.sequence) return false
+
+        const features = []
+        const seenIds = new Set()
+
+        for (const element of data.elements || []) {
+          if (
+            element.type !== 'way' ||
+            !Array.isArray(element.geometry) ||
+            element.geometry.length < 2 ||
+            seenIds.has(element.id)
+          ) {
+            continue
+          }
+
+          const tags = element.tags || {}
+          const rawScale = tags['mtb:scale'] ?? tags['mtb:scale:imba'] ?? null
+          if (rawScale === null) continue
+
+          const match = String(rawScale).match(/[0-6]/)
+          if (!match) continue
+
+          const scale = Number(match[0])
+          const coordinates = element.geometry
+            .map((point) => [Number(point.lon), Number(point.lat)])
+            .filter((point) => Number.isFinite(point[0]) && Number.isFinite(point[1]))
+
+          if (coordinates.length < 2) continue
+
+          seenIds.add(element.id)
+          features.push({
+            type: 'Feature',
+            properties: {
+              id: String(element.id),
+              name: tags.name || tags.ref || `MTB Trail S${scale}`,
+              scale,
+              scaleRaw: String(rawScale),
+              surface: tags.surface || '',
+              bicycle: tags.bicycle || '',
+            },
+            geometry: {
+              type: 'LineString',
+              coordinates,
+            },
+          })
+        }
+
+        const geojson = {
+          type: 'FeatureCollection',
+          features,
+        }
+
+        source.setData(geojson)
+        cache.set(key, { time: Date.now(), data: geojson })
+        state.cooldownUntil = 0
+
+        console.log(
+          `OSM MTB Trails geladen: ${features.length} (Zoom ${zoom.toFixed(1)})`,
+        )
+        return true
+      } catch (error) {
+        if (error?.name === 'AbortError') return false
+        lastError = error
+
+        // 429/504 sind Server-/Lastprobleme. Nicht sofort weiterfeuern.
+        if (error?.status === 429 || error?.status === 504 || error?.status >= 500) {
+          continue
+        }
+
+        break
+      }
+    }
+
+    state.cooldownUntil = Date.now() + MTB_TRAIL_ERROR_COOLDOWN
+    console.warn(
+      'MTB-Trail-Daten konnten gerade nicht geladen werden. Die Karte bleibt trotzdem benutzbar.',
+      lastError?.message || lastError,
+    )
+    return false
+  } finally {
+    if (state.controller === controller) {
+      state.controller = null
+    }
+  }
+}
+
+function installMtbTrailClickHandlers(map) {
+  if (map.__mtbTrailHandlersInstalled) return
+  map.__mtbTrailHandlersInstalled = true
+
+  const getTrailFeaturesAtPoint = (point) => {
+    const layers = ['osm-mtb-trails-hitbox', ...MTB_TRAIL_LAYER_IDS]
+      .filter((id) => map.getLayer(id))
+    if (!layers.length) return []
+    return map.queryRenderedFeatures(point, { layers })
+  }
+
+  const handleTrailClick = (event) => {
+    const features = getTrailFeaturesAtPoint(event.point)
+    if (!features.length) return
+
+    const feature =
+      features.find((item) => item.layer?.id === 'osm-mtb-trails-hitbox') ||
+      features[0]
+
+    if (!feature) return
+
+    const properties = feature.properties || {}
+    const trailName = properties.name || 'Unbenannter MTB Trail'
+    const scale = Number(properties.scale)
+    const difficultyNames = {
+      0: 'S0 – Sehr leicht',
+      1: 'S1 – Leicht',
+      2: 'S2 – Mittel',
+      3: 'S3 – Schwer',
+      4: 'S4 – Sehr schwer',
+      5: 'S5 – Extrem',
+      6: 'S6 – Extrem',
+    }
+    const difficulty = difficultyNames[scale] || properties.scaleRaw || 'Unbekannt'
+    const coordinates = feature.geometry?.coordinates || []
+    const length = formatTrailLength(getTrailLengthMeters(coordinates))
+
+    removeSelectedMtbTrail(map)
+
+    if (map.getSource('osm-mtb-trails')) {
+      map.addLayer({
+        id: 'selected-osm-mtb-trail',
+        type: 'line',
+        source: 'osm-mtb-trails',
+        filter: ['==', ['get', 'id'], String(properties.id)],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': '#a5f51a',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 4, 10, 6, 13, 8, 16, 11, 19, 15],
+          'line-opacity': 1,
+          'line-blur': 0.25,
+        },
+      })
+    }
+
+    new Popup({ closeButton: true, closeOnClick: true, maxWidth: '320px' })
+      .setLngLat(event.lngLat)
+      .setHTML(`
+        <div class="mtb-trail-popup">
+          <div class="mtb-trail-popup-label">🚵 MTB TRAIL</div>
+          <strong>${escapeHtml(trailName)}</strong>
+          <span>Schwierigkeit: <b>${escapeHtml(difficulty)}</b></span>
+          <span>Länge: <b>${escapeHtml(length)}</b></span>
+          ${properties.surface ? `<span>Untergrund: <b>${escapeHtml(properties.surface)}</b></span>` : ''}
+          <span>Höhenmeter: <b>nicht verfügbar</b></span>
+        </div>
+      `)
+      .addTo(map)
+  }
+
+  map.on('click', handleTrailClick)
+
+  map.on('mousemove', (event) => {
+    const features = getTrailFeaturesAtPoint(event.point)
+    map.getCanvas().style.cursor = features.length ? 'pointer' : ''
+  })
+
+  MTB_TRAIL_LAYER_IDS.forEach((layerId) => {
+    map.on('click', layerId, handleTrailClick)
+  })
+  map.on('click', 'osm-mtb-trails-hitbox', handleTrailClick)
+}
+
+function setupMtbTrailLoading(map) {
+  let timer = null
+  let destroyed = false
+
+  const schedule = (delay = MTB_TRAIL_REQUEST_DELAY) => {
+    window.clearTimeout(timer)
+    timer = window.setTimeout(async () => {
+      if (destroyed) return
+      await loadOsmMtbTrails(map)
+    }, delay)
+  }
+
+  map.on('load', () => {
+    ensureMtbTrailLayers(map)
+    installMtbTrailClickHandlers(map)
+    updateMtbTrailVisibility(map, {
+      green: true,
+      blue: true,
+      red: true,
+      black: true,
+    })
+    schedule(1200)
+  })
+
+  // Nur moveend: zoomend + moveend zusammen haben vorher doppelte Requests ausgelöst.
+  map.on('moveend', () => schedule(1000))
+
+  return () => {
+    destroyed = true
+    window.clearTimeout(timer)
+    const state = window.__mtbTrailRequestState
+    if (state?.controller) state.controller.abort()
+  }
+}
+
+/* =====================================================
+   WAYMARKED MTB TRAILS
+===================================================== */
+
+
+
+
+/* =====================================================
+   HTML SICHER MACHEN
+===================================================== */
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll(
+      "'",
+      '&#039;'
+    )
+}
+
 function MapPage() {
   const mapContainer = useRef(null)
   const mapRef = useRef(null)
@@ -5210,45 +5747,46 @@ function MapPage() {
 const [locationError, setLocationError] = useState(false)
 const [search, setSearch] = useState('')
 const [selectedPark, setSelectedPark] = useState(null)
+const [showBikeparks, setShowBikeparks] = useState(true)
+const [showGreenTrails, setShowGreenTrails] = useState(true)
+const [showBlueTrails, setShowBlueTrails] = useState(true)
+const [showRedTrails, setShowRedTrails] = useState(true)
+const [showBlackTrails, setShowBlackTrails] = useState(true)
 
 const [isRecording, setIsRecording] = useState(false)
 const [tourDistance, setTourDistance] = useState(0)
 const [tourElevation, setTourElevation] = useState(0)
 
 const trackRef = useRef([])
+/* ---------------------------------------------
+   KARTE ERSTELLEN
+--------------------------------------------- */
 
-  /* ---------------------------------------------
-     KARTE ERSTELLEN
-  --------------------------------------------- */
-
-  useEffect(() => {
+useEffect(() => {
   if (!mapContainer.current) return
 
   const map = new Map({
     container: mapContainer.current,
 
-    style: {
-      version: 8,
+    // OpenStreetMap erwartet bei Web-Karten einen gültigen Referer.
+    // Der Header hilft außerdem bei lokalen Vite-Entwicklungsseiten.
+    transformRequest: (url, resourceType) => {
+      if (
+        resourceType === 'Tile' &&
+        url.startsWith('https://tile.openstreetmap.org/')
+      ) {
+        return {
+          url,
+          headers: {
+            'X-Requested-With': 'MTB Community',
+          },
+        }
+      }
 
-      sources: {
-        osm: {
-          type: 'raster',
-          tiles: [
-            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          ],
-          tileSize: 256,
-          attribution: '© OpenStreetMap contributors',
-        },
-      },
-
-      layers: [
-        {
-          id: 'osm',
-          type: 'raster',
-          source: 'osm',
-        },
-      ],
+      return { url }
     },
+
+      style: 'https://tiles.openfreemap.org/styles/liberty',
 
     center: [11.5, 47.0],
     zoom: 5.5,
@@ -5268,6 +5806,8 @@ const trackRef = useRef([])
 
   mapRef.current = map
 
+  const cleanupMtbTrailLoading = setupMtbTrailLoading(map)
+
   // Wichtig für Handy/Tablet:
   // MapLibre bekommt nach dem Anzeigen die richtige Größe.
   const resizeMap = () => {
@@ -5278,22 +5818,57 @@ const trackRef = useRef([])
 
   map.on('load', resizeMap)
 
-  // Falls der Kartenbereich durch Navigation erst später sichtbar wird
-  setTimeout(resizeMap, 100)
-  setTimeout(resizeMap, 500)
-  setTimeout(resizeMap, 1000)
+  // Falls der Kartenbereich durch Navigation erst später sichtbar wird.
+  const resizeTimer1 = window.setTimeout(resizeMap, 100)
+  const resizeTimer2 = window.setTimeout(resizeMap, 500)
+  const resizeTimer3 = window.setTimeout(resizeMap, 1000)
 
   window.addEventListener('resize', resizeMap)
   window.addEventListener('orientationchange', resizeMap)
 
   return () => {
+    window.clearTimeout(resizeTimer1)
+    window.clearTimeout(resizeTimer2)
+    window.clearTimeout(resizeTimer3)
+
     window.removeEventListener('resize', resizeMap)
     window.removeEventListener('orientationchange', resizeMap)
+
+    cleanupMtbTrailLoading()
 
     map.remove()
     mapRef.current = null
   }
 }, [])
+
+  /* ---------------------------------------------
+     TRAIL-FARBEN EIN/AUS
+  --------------------------------------------- */
+
+  useEffect(() => {
+    const map = mapRef.current
+
+    if (!map) return
+
+    const applyVisibility = () => {
+      updateMtbTrailVisibility(map, {
+        green: showGreenTrails,
+        blue: showBlueTrails,
+        red: showRedTrails,
+        black: showBlackTrails,
+      })
+    }
+
+    if (map.loaded()) {
+      applyVisibility()
+    } else {
+      map.once('load', applyVisibility)
+    }
+
+    return () => {
+      map.off('load', applyVisibility)
+    }
+  }, [showGreenTrails, showBlueTrails, showRedTrails, showBlackTrails])
 
  /* ---------------------------------------------
    GPS TRACKING
@@ -5377,6 +5952,8 @@ if (isRecording) {
 
       parkMarkersRef.current = []
 
+      if (!showBikeparks) return
+
       const filteredParks =
         GRAVITY_CARD_PARKS.filter(
           (park) =>
@@ -5440,7 +6017,7 @@ if (isRecording) {
 
       parkMarkersRef.current = []
     }
-  }, [search])
+  }, [search, showBikeparks])
 
   /* ---------------------------------------------
      USER MARKER
@@ -5572,9 +6149,14 @@ if (isRecording) {
       </div>
 
       <div className="map-filter-row">
-        <button className="bikepark-toggle active">
-          <span className="toggle-dot">
-            ✓
+        <button
+          className={`bikepark-toggle ${showBikeparks ? 'active' : ''}`}
+          onClick={() => setShowBikeparks((value) => !value)}
+          aria-pressed={showBikeparks}
+          type="button"
+        >
+          <span className="toggle-eye">
+            {showBikeparks ? '👁️' : '🙈'}
           </span>
 
           🚵 Gravity Card Parks
@@ -5585,87 +6167,168 @@ if (isRecording) {
         </span>
       </div>
 
-      {/* KARTE */}
+      <div
+        className="trail-filter-row"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '8px',
+          marginBottom: '12px',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setShowGreenTrails((value) => !value)}
+          aria-pressed={showGreenTrails}
+          style={{
+            border: `1px solid ${showGreenTrails ? 'rgba(57, 211, 83, 0.65)' : 'rgba(255,255,255,0.12)'}`,
+            background: showGreenTrails ? 'rgba(57, 211, 83, 0.14)' : 'rgba(255,255,255,0.04)',
+            color: showGreenTrails ? '#39D353' : 'rgba(255,255,255,0.45)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+          }}
+        >
+          🟢 {showGreenTrails ? 'S0 an' : 'S0 aus'}
+        </button>
 
-      <div className="real-map">
-        <div
-          ref={mapContainer}
-          className="maplibre-container"
-        />
+        <button
+          type="button"
+          onClick={() => setShowBlueTrails((value) => !value)}
+          aria-pressed={showBlueTrails}
+          style={{
+            border: `1px solid ${showBlueTrails ? 'rgba(22, 140, 255, 0.65)' : 'rgba(255,255,255,0.12)'}`,
+            background: showBlueTrails ? 'rgba(22, 140, 255, 0.14)' : 'rgba(255,255,255,0.04)',
+            color: showBlueTrails ? '#168CFF' : 'rgba(255,255,255,0.45)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+          }}
+        >
+          🔵 {showBlueTrails ? 'S1 an' : 'S1 aus'}
+        </button>
 
-        {locationError && (
-          <div className="map-location-info">
-            📍 Standort konnte nicht
-            ermittelt werden.
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowRedTrails((value) => !value)}
+          aria-pressed={showRedTrails}
+          style={{
+            border: `1px solid ${showRedTrails ? 'rgba(255, 48, 48, 0.65)' : 'rgba(255,255,255,0.12)'}`,
+            background: showRedTrails ? 'rgba(255, 48, 48, 0.14)' : 'rgba(255,255,255,0.04)',
+            color: showRedTrails ? '#FF3030' : 'rgba(255,255,255,0.45)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+          }}
+        >
+          🔴 {showRedTrails ? 'S2 an' : 'S2 aus'}
+        </button>
 
-        {/* AUSGEWÄHLTER PARK */}
-
-        {selectedPark && (
-          <div className="bikepark-card">
-            <button
-              className="bikepark-close"
-              onClick={() =>
-                setSelectedPark(null)
-              }
-            >
-              ×
-            </button>
-
-            <div className="bikepark-card-icon">
-              🚵
-            </div>
-
-            <div className="bikepark-card-content">
-              <span className="bikepark-label">
-                GRAVITY CARD
-              </span>
-
-              <h3>
-                {selectedPark.name}
-              </h3>
-
-              <p>
-                📍 {selectedPark.country}
-              </p>
-
-              <div className="selected-trails">
-                <strong>
-                  Trails
-                </strong>
-
-                <div>
-                  {selectedPark.trails
-                    .slice(0, 5)
-                    .map((trail) => (
-                      <span
-                        key={trail}
-                      >
-                        {trail}
-                      </span>
-                    ))}
-                </div>
-              </div>
-
-              <button
-                className="park-website-button"
-                onClick={() =>
-                  window.open(
-                    selectedPark.website,
-                    '_blank',
-                    'noopener,noreferrer'
-                  )
-                }
-              >
-                🌐 Offizielle Webseite
-              </button>
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowBlackTrails((value) => !value)}
+          aria-pressed={showBlackTrails}
+          style={{
+            border: `1px solid ${showBlackTrails ? 'rgba(17, 17, 17, 0.9)' : 'rgba(255,255,255,0.12)'}`,
+            background: showBlackTrails ? 'rgba(17, 17, 17, 0.55)' : 'rgba(255,255,255,0.04)',
+            color: showBlackTrails ? '#ffffff' : 'rgba(255,255,255,0.45)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+          }}
+        >
+          ⚫ {showBlackTrails ? 'S3–S6 an' : 'S3–S6 aus'}
+        </button>
       </div>
 
-      {/* PARKLISTE */}
+{/* =====================================================
+   KARTE
+===================================================== */}
+
+<div className="real-map">
+
+  <div
+    ref={mapContainer}
+    className="maplibre-container"
+  />
+
+  {locationError && (
+    <div className="map-location-info">
+      📍 Standort konnte nicht
+      ermittelt werden.
+    </div>
+  )}
+
+</div>
+
+{/* AUSGEWÄHLTER PARK */}
+
+{selectedPark && (
+  <div className="bikepark-card">
+
+    <button
+      className="bikepark-close"
+      onClick={() => setSelectedPark(null)}
+    >
+      ×
+    </button>
+
+    <div className="bikepark-card-icon">
+      🚵
+    </div>
+
+    <div className="bikepark-card-content">
+
+      <span className="bikepark-label">
+        GRAVITY CARD
+      </span>
+
+      <h3>
+        {selectedPark.name}
+      </h3>
+
+      <p>
+        📍 {selectedPark.country}
+      </p>
+
+      <div className="selected-trails">
+        <strong>
+          Trails
+        </strong>
+
+        <div>
+          {selectedPark.trails
+            .slice(0, 5)
+            .map((trail) => (
+              <span key={trail}>
+                {trail}
+              </span>
+            ))}
+        </div>
+      </div>
+
+      <button
+        className="park-website-button"
+        onClick={() =>
+          window.open(
+            selectedPark.website,
+            '_blank',
+            'noopener,noreferrer'
+          )
+        }
+      >
+        🌐 Offizielle Webseite
+      </button>
+
+    </div>
+
+  </div>
+)}
+{/* PARKLISTE */}
 
       <div className="bikepark-panel">
         <div className="bikepark-panel-header">
@@ -5857,7 +6520,7 @@ function ProfileImageCropper({
   const viewportRef = useRef(null)
   const imageRef = useRef(null)
 
-  const pointers = useRef(new Map())
+  const pointers = useRef(new globalThis.Map())
   const lastPinchDistance = useRef(null)
   const dragStart = useRef(null)
 
@@ -6004,72 +6667,124 @@ function ProfileImageCropper({
   }
 
   const handlePointerMove = (event) => {
-    if (!pointers.current.has(event.pointerId)) {
+  if (!pointers.current.has(event.pointerId)) {
+    return
+  }
+
+  pointers.current.set(
+    event.pointerId,
+    {
+      x: event.clientX,
+      y: event.clientY,
+    }
+  )
+
+  // 1 Finger = Bild verschieben
+  if (pointers.current.size === 1) {
+    if (!dragStart.current) return
+
+    const start = dragStart.current
+
+    const newX =
+      start.positionX +
+      (event.clientX - start.pointerX)
+
+    const newY =
+      start.positionY +
+      (event.clientY - start.pointerY)
+
+    setPosition(
+      clampPosition(newX, newY)
+    )
+
+    return
+  }
+
+  // 2 Finger = Pinch-Zoom
+  if (pointers.current.size === 2) {
+    const values = Array.from(
+      pointers.current.values()
+    )
+
+    const a = values[0]
+    const b = values[1]
+
+    const distance = Math.hypot(
+      a.x - b.x,
+      a.y - b.y
+    )
+
+    if (!lastPinchDistance.current) {
+      lastPinchDistance.current = distance
       return
     }
 
-    pointers.current.set(
-      event.pointerId,
-      {
-        x: event.clientX,
-        y: event.clientY,
-      }
+    const difference =
+      distance -
+      lastPinchDistance.current
+
+    const nextZoom = Math.max(
+      1,
+      Math.min(
+        4,
+        zoom * (1 + difference * 0.004)
+      )
     )
 
-    if (pointers.current.size === 1) {
-      if (!dragStart.current) return
+    // Mittelpunkt der beiden Finger
+    const centerX =
+      (a.x + b.x) / 2
 
-      const start = dragStart.current
+    const centerY =
+      (a.y + b.y) / 2
 
-      const newX =
-        start.positionX +
-        (event.clientX - start.pointerX)
+    const rect =
+      viewportRef.current?.getBoundingClientRect()
 
-      const newY =
-        start.positionY +
-        (event.clientY - start.pointerY)
+    if (!rect) return
 
-      setPosition(
-        clampPosition(newX, newY)
+    const viewportCenterX =
+      rect.left + rect.width / 2
+
+    const viewportCenterY =
+      rect.top + rect.height / 2
+
+    // Zoom zur Position zwischen den Fingern
+    const factor =
+      nextZoom / zoom
+
+    const nextX =
+      centerX -
+      viewportCenterX -
+      (
+        centerX -
+        viewportCenterX -
+        position.x
+      ) * factor
+
+    const nextY =
+      centerY -
+      viewportCenterY -
+      (
+        centerY -
+        viewportCenterY -
+        position.y
+      ) * factor
+
+    setZoom(nextZoom)
+
+    setPosition(
+      clampPosition(
+        nextX,
+        nextY,
+        nextZoom
       )
-    }
+    )
 
-    if (pointers.current.size === 2) {
-      const distance =
-        distanceBetweenPointers()
-
-      if (!distance) return
-
-      if (!lastPinchDistance.current) {
-        lastPinchDistance.current = distance
-        return
-      }
-
-      const difference =
-        distance -
-        lastPinchDistance.current
-
-      const nextZoom = Math.max(
-        1,
-        Math.min(
-          4,
-          zoom + difference * 0.005
-        )
-      )
-
-      setZoom(nextZoom)
-
-      setPosition(
-        clampPosition(
-          position.x,
-          position.y,
-          nextZoom
-        )
-      )
-
-      lastPinchDistance.current = distance
-    }
+    lastPinchDistance.current =
+      distance
   }
+}
 
   const handlePointerUp = (event) => {
     pointers.current.delete(
@@ -6198,9 +6913,21 @@ function ProfileImageCropper({
   return (
     <div className="profile-crop-overlay">
 
-      <div className="profile-crop-editor">
+      <div
+        className="profile-crop-editor"
+        style={{
+          background: '#071a0d',
+          borderColor: '#163d22',
+        }}
+      >
 
-        <div className="profile-crop-header">
+        <div
+          className="profile-crop-header"
+          style={{
+            background: '#071a0d',
+            borderColor: '#163d22',
+          }}
+        >
 
           <button
             type="button"
@@ -6226,14 +6953,20 @@ function ProfileImageCropper({
         </div>
 
         <div
-          ref={viewportRef}
-          className="profile-crop-viewport"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onWheel={handleWheel}
-        >
+  ref={viewportRef}
+  className="profile-crop-viewport"
+  style={{
+    touchAction: 'none',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    WebkitTouchCallout: 'none',
+  }}
+  onPointerDown={handlePointerDown}
+  onPointerMove={handlePointerMove}
+  onPointerUp={handlePointerUp}
+  onPointerCancel={handlePointerUp}
+  onWheel={handleWheel}
+>
 
           <img
             ref={imageRef}
@@ -6268,19 +7001,27 @@ function ProfileImageCropper({
             style={{
               width: cropSize,
               height: cropSize,
+              borderColor: '#a5f51a',
+              boxShadow: '0 0 0 2px rgba(165,245,26,0.18)',
             }}
           />
 
         </div>
 
-        <div className="profile-crop-controls">
+        <div
+          className="profile-crop-controls"
+          style={{
+            background: '#071a0d',
+            borderColor: '#163d22',
+          }}
+        >
 
           <span>−</span>
 
           <input
             type="range"
             min="1"
-            max="4"
+            max="3"
             step="0.01"
             value={zoom}
             onChange={handleZoomSlider}
@@ -6290,7 +7031,12 @@ function ProfileImageCropper({
 
         </div>
 
-        <div className="profile-crop-hint">
+        <div
+          className="profile-crop-hint"
+          style={{
+            background: '#071a0d',
+          }}
+        >
           Bild mit dem Finger verschieben ·
           mit zwei Fingern zoomen
         </div>

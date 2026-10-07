@@ -2634,43 +2634,57 @@ function TourDetailPage({
       return
     }
 
-    const map = new Map({
-      container: mapContainer.current,
+    const thunderforestApiKey =
+  import.meta.env.VITE_THUNDERFOREST_API_KEY
 
-      style: {
-        version: 8,
+if (!thunderforestApiKey) {
+  console.error(
+    'VITE_THUNDERFOREST_API_KEY fehlt in .env.local'
+  )
+  return
+}
 
-        sources: {
-          osm: {
-            type: 'raster',
+const map = new Map({
+  container: mapContainer.current,
 
-            tiles: [
-              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            ],
+  style: {
+    version: 8,
 
-            tileSize: 256,
+    sources: {
+      thunderforest: {
+        type: 'raster',
 
-            attribution:
-              '© OpenStreetMap contributors',
-          },
-        },
-
-        layers: [
-          {
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-          },
+        tiles: [
+          `https://api.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${thunderforestApiKey}`,
         ],
+
+        tileSize: 256,
+
+        attribution:
+          '© Thunderforest | © OpenStreetMap contributors',
       },
+    },
 
-      center: coordinates[0],
-      zoom: 13,
+    layers: [
+      {
+        id: 'thunderforest-outdoors',
+        type: 'raster',
+        source: 'thunderforest',
 
-      attributionControl: true,
-      dragRotate: false,
-      touchZoomRotate: true,
-    })
+        minzoom: 0,
+        maxzoom: 22,
+      },
+    ],
+  },
+
+  center: [11.5, 47.0],
+  zoom: 5.5,
+
+  attributionControl: true,
+  cooperativeGestures: false,
+  dragRotate: false,
+  touchZoomRotate: true,
+})
 
     mapRef.current = map
 
@@ -5285,9 +5299,11 @@ function TrailFinder() {
 /* =====================================================
    🚵 MTB TRAILS AUS OPENSTREETMAP
 
-   Die Trails werden direkt als GeoJSON in unsere eigene
-   MapLibre-Karte geladen. Dadurch sind sie echte Layer
-   und können angeklickt werden.
+   MTB-Trails werden über Overpass aus OpenStreetMap
+   geladen und als echte GeoJSON-Layer über die
+   Thunderforest-Karte gelegt.
+
+   Sichtbar / geladen erst ab Zoom 12.
 ===================================================== */
 
 const MTB_TRAIL_COLORS = {
@@ -5307,13 +5323,23 @@ const MTB_TRAIL_LAYER_IDS = [
   'osm-mtb-trails-black',
 ]
 
-const MTB_TRAIL_QUERY_MIN_ZOOM = 5
+const MTB_TRAIL_QUERY_MIN_ZOOM = 12
+
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+]
 
 function removeSelectedMtbTrail(map) {
   if (map.getLayer('selected-osm-mtb-trail')) {
     map.removeLayer('selected-osm-mtb-trail')
   }
 }
+
+/* -----------------------------------------------------
+   TRAIL-LAYER ERSTELLEN
+----------------------------------------------------- */
 
 function ensureMtbTrailLayers(map) {
   if (!map.getSource('osm-mtb-trails')) {
@@ -5342,10 +5368,10 @@ function ensureMtbTrailLayers(map) {
           'interpolate',
           ['linear'],
           ['zoom'],
-          7, 2,
-          10, 2,
+          12, 2.5,
           13, 3,
-          16, 5,
+          15, 4,
+          17, 5,
           19, 7,
         ],
         'line-opacity': 0.95,
@@ -5369,10 +5395,10 @@ function ensureMtbTrailLayers(map) {
           'interpolate',
           ['linear'],
           ['zoom'],
-          7, 2,
-          10, 2,
+          12, 2.5,
           13, 3,
-          16, 5,
+          15, 4,
+          17, 5,
           19, 7,
         ],
         'line-opacity': 0.95,
@@ -5396,10 +5422,10 @@ function ensureMtbTrailLayers(map) {
           'interpolate',
           ['linear'],
           ['zoom'],
-          7, 2,
-          10, 2,
+          12, 2.5,
           13, 3,
-          16, 5,
+          15, 4,
+          17, 5,
           19, 7,
         ],
         'line-opacity': 0.95,
@@ -5412,7 +5438,11 @@ function ensureMtbTrailLayers(map) {
       id: 'osm-mtb-trails-black',
       type: 'line',
       source: 'osm-mtb-trails',
-      filter: ['>=', ['to-number', ['get', 'scale']], 3],
+      filter: [
+        '>=',
+        ['to-number', ['get', 'scale']],
+        3,
+      ],
       layout: {
         'line-cap': 'round',
         'line-join': 'round',
@@ -5423,10 +5453,10 @@ function ensureMtbTrailLayers(map) {
           'interpolate',
           ['linear'],
           ['zoom'],
-          7, 2,
-          10, 2,
+          12, 2.5,
           13, 3,
-          16, 5,
+          15, 4,
+          17, 5,
           19, 7,
         ],
         'line-opacity': 0.96,
@@ -5434,8 +5464,11 @@ function ensureMtbTrailLayers(map) {
     })
   }
 
-  // Breite, fast unsichtbare Klickfläche. Die sichtbaren
-  // Linien bleiben darunter und behalten ihr Aussehen.
+  /*
+   * Unsichtbare Klickfläche.
+   * Sie macht die Trails leichter anklickbar,
+   * ohne das Aussehen der Karte zu verändern.
+   */
   if (!map.getLayer('osm-mtb-trails-hitbox')) {
     map.addLayer({
       id: 'osm-mtb-trails-hitbox',
@@ -5451,11 +5484,9 @@ function ensureMtbTrailLayers(map) {
           'interpolate',
           ['linear'],
           ['zoom'],
-          5, 16,
-          7, 18,
-          10, 20,
-          13, 22,
-          16, 24,
+          12, 14,
+          14, 18,
+          16, 22,
           19, 28,
         ],
         'line-opacity': 0.001,
@@ -5464,45 +5495,402 @@ function ensureMtbTrailLayers(map) {
   }
 }
 
+/* -----------------------------------------------------
+   TRAIL-NAMEN
+----------------------------------------------------- */
 
-function updateMtbTrailVisibility(map, visibility) {
-  if (!map || !map.loaded()) return
-
-  const layerVisibility = {
-    'osm-mtb-trails-green': visibility.green ? 'visible' : 'none',
-    'osm-mtb-trails-blue': visibility.blue ? 'visible' : 'none',
-    'osm-mtb-trails-red': visibility.red ? 'visible' : 'none',
-    'osm-mtb-trails-black': visibility.black ? 'visible' : 'none',
-  }
-
-  Object.entries(layerVisibility).forEach(([layerId, value]) => {
-    if (map.getLayer(layerId)) {
-      map.setLayoutProperty(layerId, 'visibility', value)
-    }
-  })
-}
-
-async function loadOsmMtbTrails(map) {
-  if (!map || !map.loaded()) return
-
-  ensureMtbTrailLayers(map)
-
-  const zoom = map.getZoom()
-  const source = map.getSource('osm-mtb-trails')
-
-  if (zoom < MTB_TRAIL_QUERY_MIN_ZOOM) {
+function clearMtbTrailNameMarkers(map) {
+  if (!map.__mtbTrailNameMarkers) {
+    map.__mtbTrailNameMarkers = []
     return
   }
 
-  const bounds = map.getBounds()
+  map.__mtbTrailNameMarkers.forEach((marker) => {
+    try {
+      marker.remove()
+    } catch (_) {}
+  })
 
-  const south = Math.max(-85, bounds.getSouth())
-  const west = bounds.getWest()
-  const north = Math.min(85, bounds.getNorth())
-  const east = bounds.getEast()
+  map.__mtbTrailNameMarkers = []
+}
 
+function updateMtbTrailNameMarkers(map, features) {
+  if (!map) return
+
+  clearMtbTrailNameMarkers(map)
+
+  if (map.getZoom() < MTB_TRAIL_QUERY_MIN_ZOOM) {
+    return
+  }
+
+  const colorForScale = (scale) => {
+    if (scale === 0) return MTB_TRAIL_COLORS['0']
+    if (scale === 1) return MTB_TRAIL_COLORS['1']
+    if (scale === 2) return MTB_TRAIL_COLORS['2']
+    return MTB_TRAIL_COLORS['3']
+  }
+
+  for (const feature of features || []) {
+    const coordinates =
+      feature?.geometry?.coordinates
+
+    const name =
+      feature?.properties?.name
+
+    if (
+      !Array.isArray(coordinates) ||
+      coordinates.length < 2 ||
+      !name
+    ) {
+      continue
+    }
+
+    /*
+     * Mitte des Trails.
+     */
+    const middleIndex =
+      Math.floor(coordinates.length / 2)
+
+    const point =
+      coordinates[middleIndex]
+
+    if (
+      !Array.isArray(point) ||
+      point.length < 2
+    ) {
+      continue
+    }
+
+    const scale =
+      Number(feature.properties?.scale)
+
+    const label =
+      document.createElement('div')
+
+    label.className =
+      'mtb-trail-map-label'
+
+    label.textContent =
+      name
+
+    label.style.color =
+      colorForScale(scale)
+
+    label.style.fontWeight =
+      '800'
+
+    label.style.fontSize =
+      '12px'
+
+    label.style.lineHeight =
+      '1.1'
+
+    label.style.fontFamily =
+      'Arial, sans-serif'
+
+    label.style.whiteSpace =
+      'nowrap'
+
+    label.style.pointerEvents =
+      'none'
+
+    label.style.userSelect =
+      'none'
+
+    label.style.textShadow =
+      '0 0 2px #fff, ' +
+      '0 0 3px #fff, ' +
+      '1px 1px 0 #fff, ' +
+      '-1px -1px 0 #fff'
+
+    label.style.transform =
+      'translate(-50%, -120%)'
+
+    label.dataset.scale =
+      String(scale)
+
+    label.dataset.mtbTrailLabel =
+      'true'
+
+    const marker =
+      new Marker({
+        element: label,
+        anchor: 'center',
+      })
+        .setLngLat([
+          Number(point[0]),
+          Number(point[1]),
+        ])
+        .addTo(map)
+
+    map.__mtbTrailNameMarkers.push(
+      marker
+    )
+  }
+}
+
+/* -----------------------------------------------------
+   SICHTBARKEIT DER TRAILS
+----------------------------------------------------- */
+
+function updateMtbTrailVisibility(
+  map,
+  visibility
+) {
+  if (!map || !map.loaded()) {
+    return
+  }
+
+  const layerVisibility = {
+    'osm-mtb-trails-green':
+      visibility.green
+        ? 'visible'
+        : 'none',
+
+    'osm-mtb-trails-blue':
+      visibility.blue
+        ? 'visible'
+        : 'none',
+
+    'osm-mtb-trails-red':
+      visibility.red
+        ? 'visible'
+        : 'none',
+
+    'osm-mtb-trails-black':
+      visibility.black
+        ? 'visible'
+        : 'none',
+  }
+
+  Object.entries(
+    layerVisibility
+  ).forEach(
+    ([layerId, value]) => {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(
+          layerId,
+          'visibility',
+          value
+        )
+      }
+    }
+  )
+
+  const labelVisibility = {
+    0: visibility.green,
+    1: visibility.blue,
+    2: visibility.red,
+    3: visibility.black,
+    4: visibility.black,
+    5: visibility.black,
+    6: visibility.black,
+  }
+
+  if (
+    map.__mtbTrailNameMarkers
+  ) {
+    map.__mtbTrailNameMarkers.forEach(
+      (marker) => {
+        const element =
+          marker.getElement?.()
+
+        if (!element) return
+
+        const scale =
+          Number(element.dataset.scale)
+
+        element.style.display =
+          labelVisibility[scale]
+            ? ''
+            : 'none'
+      }
+    )
+  }
+}
+
+/* -----------------------------------------------------
+   TRAIL-DATEN LEEREN
+----------------------------------------------------- */
+
+function clearMtbTrailData(map) {
+  if (!map) return
+
+  const source =
+    map.getSource(
+      'osm-mtb-trails'
+    )
+
+  if (source) {
+    source.setData({
+      type: 'FeatureCollection',
+      features: [],
+    })
+  }
+
+  clearMtbTrailNameMarkers(map)
+
+  removeSelectedMtbTrail(map)
+}
+
+/* -----------------------------------------------------
+   OVERPASS REQUEST MIT TIMEOUT
+----------------------------------------------------- */
+
+async function fetchOverpass(
+  query,
+  isRequestCurrent
+) {
+  let lastError = null
+
+  for (
+    const endpoint of OVERPASS_ENDPOINTS
+  ) {
+    if (!isRequestCurrent()) {
+      return null
+    }
+
+    const controller =
+      new AbortController()
+
+    const timeout =
+      window.setTimeout(
+        () => controller.abort(),
+        15000
+      )
+
+    try {
+      console.log(
+        `OSM MTB: Anfrage an ${endpoint}`
+      )
+
+      const response =
+        await fetch(
+          endpoint,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type':
+                'application/x-www-form-urlencoded; charset=UTF-8',
+            },
+            body:
+              'data=' +
+              encodeURIComponent(
+                query
+              ),
+            signal:
+              controller.signal,
+          }
+        )
+
+      if (!response.ok) {
+        throw new Error(
+          `Overpass HTTP ${response.status}`
+        )
+      }
+
+      const data =
+        await response.json()
+
+      window.clearTimeout(timeout)
+
+      return data
+    } catch (error) {
+      window.clearTimeout(timeout)
+
+      lastError = error
+
+      console.warn(
+        `OSM MTB: ${endpoint} fehlgeschlagen`,
+        error
+      )
+    }
+  }
+
+  throw (
+    lastError ||
+    new Error(
+      'Kein Overpass-Server erreichbar'
+    )
+  )
+}
+
+/* -----------------------------------------------------
+   OSM MTB TRAILS LADEN
+----------------------------------------------------- */
+
+async function loadOsmMtbTrails(
+  map,
+  isRequestCurrent = () => true
+) {
+  if (
+    !map ||
+    !map.loaded()
+  ) {
+    return
+  }
+
+  ensureMtbTrailLayers(map)
+
+  const zoom =
+    map.getZoom()
+
+  const source =
+    map.getSource(
+      'osm-mtb-trails'
+    )
+
+  if (!source) {
+    return
+  }
+
+  /*
+   * Unter Zoom 12:
+   * keine Trails und keine Namen.
+   */
+  if (
+    zoom <
+    MTB_TRAIL_QUERY_MIN_ZOOM
+  ) {
+    clearMtbTrailData(map)
+    return
+  }
+
+  const bounds =
+    map.getBounds()
+
+  const south =
+    Math.max(
+      -85,
+      bounds.getSouth()
+    )
+
+  const west =
+    bounds.getWest()
+
+  const north =
+    Math.min(
+      85,
+      bounds.getNorth()
+    )
+
+  const east =
+    bounds.getEast()
+
+  /*
+   * WICHTIG:
+   *
+   * Wir filtern NICHT nach highway=path
+   * oder highway=track.
+   *
+   * Der alte funktionierende Code hat
+   * ausschließlich nach mtb:scale bzw.
+   * mtb:scale:imba gesucht.
+   *
+   * Genau das behalten wir hier bei.
+   */
   const query = `
-[out:json][timeout:25];
+[out:json][timeout:20];
 (
   way["mtb:scale"](${south},${west},${north},${east});
   way["mtb:scale:imba"](${south},${west},${north},${east});
@@ -5511,615 +5899,1200 @@ out tags geom;
 `
 
   try {
-    const response = await fetch(
-      'https://overpass-api.de/api/interpreter',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        },
-        body: 'data=' + encodeURIComponent(query),
-      }
-    )
+    const data =
+      await fetchOverpass(
+        query,
+        isRequestCurrent
+      )
 
-    if (!response.ok) {
-      throw new Error(`Overpass HTTP ${response.status}`)
+    if (
+      !data ||
+      !isRequestCurrent() ||
+      map.getZoom() <
+        MTB_TRAIL_QUERY_MIN_ZOOM
+    ) {
+      return
     }
 
-    const data = await response.json()
     const features = []
     const seenIds = new Set()
 
-    for (const element of data.elements || []) {
+    for (
+      const element of
+        data.elements || []
+    ) {
       if (
         element.type !== 'way' ||
-        !Array.isArray(element.geometry) ||
-        element.geometry.length < 2 ||
-        seenIds.has(element.id)
+        !Array.isArray(
+          element.geometry
+        ) ||
+        element.geometry.length <
+          2 ||
+        seenIds.has(
+          element.id
+        )
       ) {
         continue
       }
 
-      const tags = element.tags || {}
+      const tags =
+        element.tags || {}
+
+      /*
+       * Sicherheit:
+       * offensichtliche Nicht-Trail-Objekte
+       * werden nicht dargestellt.
+       *
+       * Die normalen highway-Werte werden
+       * NICHT eingeschränkt.
+       */
+      if (
+        tags.aerialway ||
+        tags.railway ||
+        tags.cableway
+      ) {
+        continue
+      }
 
       const rawScale =
         tags['mtb:scale'] ??
         tags['mtb:scale:imba'] ??
         null
 
-      if (rawScale === null) continue
+      if (
+        rawScale === null
+      ) {
+        continue
+      }
 
-      const match = String(rawScale).match(/[0-6]/)
-      if (!match) continue
+      const match =
+        String(rawScale)
+          .match(/[0-6]/)
 
-      const scale = Number(match[0])
-      seenIds.add(element.id)
+      if (!match) {
+        continue
+      }
+
+      const scale =
+        Number(match[0])
+
+      seenIds.add(
+        element.id
+      )
+
+      const coordinates =
+        element.geometry
+          .map(
+            (point) => [
+              Number(point.lon),
+              Number(point.lat),
+            ]
+          )
+          .filter(
+            (point) =>
+              Number.isFinite(
+                point[0]
+              ) &&
+              Number.isFinite(
+                point[1]
+              )
+          )
+
+      if (
+        coordinates.length <
+        2
+      ) {
+        continue
+      }
 
       features.push({
         type: 'Feature',
+
         properties: {
-          id: String(element.id),
+          id: String(
+            element.id
+          ),
+
           name:
             tags.name ||
+            tags['mtb:name'] ||
             tags.ref ||
             `MTB Trail S${scale}`,
+
           scale,
-          scaleRaw: String(rawScale),
-          surface: tags.surface || '',
-          bicycle: tags.bicycle || '',
+
+          scaleRaw:
+            String(rawScale),
+
+          surface:
+            tags.surface ||
+            '',
+
+          bicycle:
+            tags.bicycle ||
+            '',
+
+          highway:
+            tags.highway ||
+            '',
         },
+
         geometry: {
-          type: 'LineString',
-          coordinates: element.geometry.map((point) => [
-            Number(point.lon),
-            Number(point.lat),
-          ]),
+          type:
+            'LineString',
+
+          coordinates,
         },
       })
+    }
+
+    if (
+      !isRequestCurrent() ||
+      map.getZoom() <
+        MTB_TRAIL_QUERY_MIN_ZOOM
+    ) {
+      return
     }
 
     source.setData({
-      type: 'FeatureCollection',
+      type:
+        'FeatureCollection',
+
       features,
     })
 
+    updateMtbTrailNameMarkers(
+      map,
+      features
+    )
+
     console.log(
-      `OSM MTB Trails geladen: ${features.length} (Zoom ${zoom.toFixed(1)})`
+      `OSM MTB Trails geladen: ${features.length} ` +
+      `(Zoom ${map.getZoom().toFixed(1)})`
     )
   } catch (error) {
-    console.error('Fehler beim Laden der OSM MTB Trails:', error)
+    /*
+     * Ein Timeout darf die Karte NICHT
+     * kaputt machen.
+     */
+    console.warn(
+      'OSM MTB Trails konnten nicht geladen werden:',
+      error
+    )
   }
 }
 
-function installMtbTrailClickHandlers(map) {
-  if (map.__mtbTrailHandlersInstalled) return
-  map.__mtbTrailHandlersInstalled = true
+/* -----------------------------------------------------
+   TRAIL-KLICKS
+----------------------------------------------------- */
 
-  const getTrailFeaturesAtPoint = (point) => {
-    const layers = [
-      'osm-mtb-trails-hitbox',
-      ...MTB_TRAIL_LAYER_IDS,
-    ].filter((id) => map.getLayer(id))
-
-    if (!layers.length) return []
-
-    return map.queryRenderedFeatures(point, { layers })
+function installMtbTrailClickHandlers(
+  map
+) {
+  if (
+    map.__mtbTrailHandlersInstalled
+  ) {
+    return
   }
 
-  const handleTrailClick = (event) => {
-    const features = getTrailFeaturesAtPoint(event.point)
-    if (!features.length) return
+  map.__mtbTrailHandlersInstalled =
+    true
 
-    // Bevorzugt die unsichtbare breite Klickfläche.
-    // Falls sie nicht gerendert wurde, funktioniert der Klick
-    // trotzdem über die sichtbaren Trail-Layer.
-    const feature =
-      features.find((item) => item.layer?.id === 'osm-mtb-trails-hitbox') ||
-      features[0]
+  const getTrailFeaturesAtPoint =
+    (point) => {
+      const layers = [
+        'osm-mtb-trails-hitbox',
+        ...MTB_TRAIL_LAYER_IDS,
+      ].filter(
+        (id) =>
+          map.getLayer(id)
+      )
 
-    if (!feature) return
+      if (!layers.length) {
+        return []
+      }
 
-    const properties = feature.properties || {}
-    const trailName =
-      properties.name || 'Unbenannter MTB Trail'
-    const scale = Number(properties.scale)
-
-    const difficultyNames = {
-      0: 'S0 – Sehr leicht',
-      1: 'S1 – Leicht',
-      2: 'S2 – Mittel',
-      3: 'S3 – Schwer',
-      4: 'S4 – Sehr schwer',
-      5: 'S5 – Extrem',
-      6: 'S6 – Extrem',
+      return map.queryRenderedFeatures(
+        point,
+        {
+          layers,
+        }
+      )
     }
 
-    const difficulty =
-      difficultyNames[scale] ||
-      properties.scaleRaw ||
-      'Unbekannt'
+  const handleTrailClick =
+    (event) => {
+      const features =
+        getTrailFeaturesAtPoint(
+          event.point
+        )
 
-    removeSelectedMtbTrail(map)
+      if (
+        !features.length
+      ) {
+        return
+      }
 
-    if (map.getSource('osm-mtb-trails')) {
-      map.addLayer({
-        id: 'selected-osm-mtb-trail',
-        type: 'line',
-        source: 'osm-mtb-trails',
-        filter: [
-          '==',
-          ['get', 'id'],
-          String(properties.id),
-        ],
-        layout: {
-          'line-cap': 'round',
-          'line-join': 'round',
-        },
-        paint: {
-          'line-color': '#a5f51a',
-          'line-width': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            7, 4,
-            10, 6,
-            13, 8,
-            16, 11,
-            19, 15,
+      const feature =
+        features.find(
+          (item) =>
+            item.layer?.id ===
+            'osm-mtb-trails-hitbox'
+        ) ||
+        features[0]
+
+      if (!feature) {
+        return
+      }
+
+      const properties =
+        feature.properties ||
+        {}
+
+      const trailName =
+        properties.name ||
+        'Unbenannter MTB Trail'
+
+      const scale =
+        Number(
+          properties.scale
+        )
+
+      const difficultyNames = {
+        0: 'S0 – Sehr leicht',
+        1: 'S1 – Leicht',
+        2: 'S2 – Mittel',
+        3: 'S3 – Schwer',
+        4: 'S4 – Sehr schwer',
+        5: 'S5 – Extrem',
+        6: 'S6 – Extrem',
+      }
+
+      const difficulty =
+        difficultyNames[
+          scale
+        ] ||
+        properties.scaleRaw ||
+        'Unbekannt'
+
+      removeSelectedMtbTrail(
+        map
+      )
+
+      if (
+        map.getSource(
+          'osm-mtb-trails'
+        )
+      ) {
+        map.addLayer({
+          id:
+            'selected-osm-mtb-trail',
+
+          type:
+            'line',
+
+          source:
+            'osm-mtb-trails',
+
+          filter: [
+            '==',
+            ['get', 'id'],
+            String(
+              properties.id
+            ),
           ],
-          'line-opacity': 1,
-          'line-blur': 0.25,
-        },
+
+          layout: {
+            'line-cap':
+              'round',
+
+            'line-join':
+              'round',
+          },
+
+          paint: {
+            'line-color':
+              '#a5f51a',
+
+            'line-width': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              12, 4,
+              14, 6,
+              16, 9,
+              19, 13,
+            ],
+
+            'line-opacity':
+              1,
+
+            'line-blur':
+              0.25,
+          },
+        })
+      }
+
+      new Popup({
+        closeButton:
+          true,
+
+        closeOnClick:
+          true,
+
+        maxWidth:
+          '300px',
       })
+        .setLngLat(
+          event.lngLat
+        )
+        .setHTML(`
+          <div class="mtb-trail-popup">
+            <div class="mtb-trail-popup-label">
+              🚵 MTB TRAIL
+            </div>
+
+            <strong>
+              ${escapeHtml(
+                trailName
+              )}
+            </strong>
+
+            <span>
+              Schwierigkeit:
+              <b>
+                ${escapeHtml(
+                  difficulty
+                )}
+              </b>
+            </span>
+
+            ${
+              properties.surface
+                ? `
+                  <span>
+                    Untergrund:
+                    <b>
+                      ${escapeHtml(
+                        properties.surface
+                      )}
+                    </b>
+                  </span>
+                `
+                : ''
+            }
+          </div>
+        `)
+        .addTo(map)
     }
 
-    new Popup({
-      closeButton: true,
-      closeOnClick: true,
-      maxWidth: '300px',
-    })
-      .setLngLat(event.lngLat)
-      .setHTML(`
-        <div class="mtb-trail-popup">
-          <div class="mtb-trail-popup-label">🚵 MTB TRAIL</div>
-          <strong>${escapeHtml(trailName)}</strong>
-          <span>Schwierigkeit: <b>${escapeHtml(difficulty)}</b></span>
-          ${properties.surface ? `<span>Untergrund: <b>${escapeHtml(properties.surface)}</b></span>` : ''}
-        </div>
-      `)
-      .addTo(map)
-  }
+  map.on(
+    'click',
+    handleTrailClick
+  )
 
-  // Globaler Klick-Handler als Fallback. Dadurch ist der Trail
-  // auch dann anklickbar, wenn MapLibre den Klick nicht direkt
-  // einem einzelnen Layer zuordnet.
-  map.on('click', handleTrailClick)
+  map.on(
+    'mousemove',
+    (event) => {
+      const features =
+        getTrailFeaturesAtPoint(
+          event.point
+        )
 
-  // Cursor auf Desktop/Trackpad.
-  map.on('mousemove', (event) => {
-    const features = getTrailFeaturesAtPoint(event.point)
-    map.getCanvas().style.cursor = features.length
-      ? 'pointer'
-      : ''
-  })
-
-  // Zusätzlich direkte Layer-Handler für MapLibre.
-  MTB_TRAIL_LAYER_IDS.forEach((layerId) => {
-    map.on('click', layerId, handleTrailClick)
-  })
-
-  map.on('click', 'osm-mtb-trails-hitbox', handleTrailClick)
+      map.getCanvas().style.cursor =
+        features.length
+          ? 'pointer'
+          : ''
+    }
+  )
 }
 
-function setupMtbTrailLoading(map) {
+/* -----------------------------------------------------
+   TRAIL-LOADING EINRICHTEN
+----------------------------------------------------- */
+
+function setupMtbTrailLoading(
+  map
+) {
   let timer = null
   let requestId = 0
 
-  const schedule = (delay = 250) => {
-    window.clearTimeout(timer)
-    timer = window.setTimeout(async () => {
-      const currentRequest = ++requestId
-      await loadOsmMtbTrails(map)
+  const clearMtbTrails =
+    () => {
+      clearMtbTrailData(
+        map
+      )
+    }
 
-      if (currentRequest !== requestId) return
-    }, delay)
-  }
+  const schedule =
+    (delay = 250) => {
+      window.clearTimeout(
+        timer
+      )
 
-  map.on('load', () => {
-    ensureMtbTrailLayers(map)
-    installMtbTrailClickHandlers(map)
-    updateMtbTrailVisibility(map, {
-      green: true,
-      blue: true,
-      red: true,
-      black: true,
-    })
-    schedule(0)
-  })
+      timer =
+        window.setTimeout(
+          async () => {
+            const currentRequest =
+              ++requestId
 
-  map.on('moveend', () => schedule(250))
-  map.on('zoomend', () => schedule(100))
+            /*
+             * Unter Zoom 12 sofort alles löschen.
+             */
+            if (
+              map.getZoom() <
+              MTB_TRAIL_QUERY_MIN_ZOOM
+            ) {
+              clearMtbTrails()
+              return
+            }
 
-  return () => {
-    window.clearTimeout(timer)
-    requestId++
-  }
-}
+            await loadOsmMtbTrails(
+              map,
+              () =>
+                currentRequest ===
+                requestId
+            )
+          },
+          delay
+        )
+    }
 
-/* =====================================================
-   WAYMARKED MTB TRAILS
-===================================================== */
+  map.on(
+    'load',
+    () => {
+      ensureMtbTrailLayers(
+        map
+      )
 
+      installMtbTrailClickHandlers(
+        map
+      )
 
-
-
-/* =====================================================
-   HTML SICHER MACHEN
-===================================================== */
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll(
-      "'",
-      '&#039;'
-    )
-}
-
-function MapPage() {
-  const mapContainer = useRef(null)
-  const mapRef = useRef(null)
-  const userMarkerRef = useRef(null)
-  const parkMarkersRef = useRef([])
-
-  const [position, setPosition] = useState(null)
-const [locationError, setLocationError] = useState(false)
-const [search, setSearch] = useState('')
-const [selectedPark, setSelectedPark] = useState(null)
-const [showBikeparks, setShowBikeparks] = useState(true)
-const [showGreenTrails, setShowGreenTrails] = useState(true)
-const [showBlueTrails, setShowBlueTrails] = useState(true)
-const [showRedTrails, setShowRedTrails] = useState(true)
-const [showBlackTrails, setShowBlackTrails] = useState(true)
-
-const [isRecording, setIsRecording] = useState(false)
-const [tourDistance, setTourDistance] = useState(0)
-const [tourElevation, setTourElevation] = useState(0)
-
-const trackRef = useRef([])
-/* ---------------------------------------------
-   KARTE ERSTELLEN
---------------------------------------------- */
-
-useEffect(() => {
-  if (!mapContainer.current) return
-
-  const map = new Map({
-    container: mapContainer.current,
-
-    style: {
-      version: 8,
-
-      sources: {
-        osm: {
-          type: 'raster',
-          tiles: [
-            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          ],
-          tileSize: 256,
-          attribution: '© OpenStreetMap contributors',
-        },
-      },
-
-      layers: [
-        {
-          id: 'osm',
-          type: 'raster',
-          source: 'osm',
-        },
-      ],
-    },
-
-    center: [11.5, 47.0],
-    zoom: 5.5,
-
-    attributionControl: true,
-    cooperativeGestures: false,
-    dragRotate: false,
-    touchZoomRotate: true,
-  })
-
-  map.addControl(
-    new NavigationControl({
-      showCompass: false,
-    }),
-    'top-right'
+      schedule(0)
+    }
   )
 
-  mapRef.current = map
+  /*
+   * Bei Verschieben neue Kartenausschnitt-Daten laden.
+   */
+  map.on(
+    'moveend',
+    () =>
+      schedule(300)
+  )
 
-  const cleanupMtbTrailLoading = setupMtbTrailLoading(map)
-
-  // Wichtig für Handy/Tablet:
-  // MapLibre bekommt nach dem Anzeigen die richtige Größe.
-  const resizeMap = () => {
-    if (mapRef.current) {
-      mapRef.current.resize()
-    }
-  }
-
-  map.on('load', resizeMap)
-
-  // Falls der Kartenbereich durch Navigation erst später sichtbar wird.
-  const resizeTimer1 = window.setTimeout(resizeMap, 100)
-  const resizeTimer2 = window.setTimeout(resizeMap, 500)
-  const resizeTimer3 = window.setTimeout(resizeMap, 1000)
-
-  window.addEventListener('resize', resizeMap)
-  window.addEventListener('orientationchange', resizeMap)
+  /*
+   * Bei Zoom ebenfalls neu laden.
+   */
+  map.on(
+    'zoomend',
+    () =>
+      schedule(150)
+  )
 
   return () => {
-    window.clearTimeout(resizeTimer1)
-    window.clearTimeout(resizeTimer2)
-    window.clearTimeout(resizeTimer3)
+    window.clearTimeout(
+      timer
+    )
 
-    window.removeEventListener('resize', resizeMap)
-    window.removeEventListener('orientationchange', resizeMap)
+    requestId++
 
-    cleanupMtbTrailLoading()
-
-    map.remove()
-    mapRef.current = null
+    clearMtbTrailNameMarkers(
+      map
+    )
   }
-}, [])
+}
 
-  /* ---------------------------------------------
-     TRAIL-FARBEN EIN/AUS
-  --------------------------------------------- */
+
+/* =====================================================
+   🗺️ MAP PAGE
+===================================================== */
+
+function MapPage() {
+  const mapContainer =
+    useRef(null)
+
+  const mapRef =
+    useRef(null)
+
+  const userMarkerRef =
+    useRef(null)
+
+  const parkMarkersRef =
+    useRef([])
+
+  const [
+    position,
+    setPosition,
+  ] = useState(null)
+
+  const [
+    locationError,
+    setLocationError,
+  ] = useState(false)
+
+  const [
+    search,
+    setSearch,
+  ] = useState('')
+
+  const [
+    selectedPark,
+    setSelectedPark,
+  ] = useState(null)
+
+  const [
+    showBikeparks,
+    setShowBikeparks,
+  ] = useState(true)
+
+  const [
+    showGreenTrails,
+    setShowGreenTrails,
+  ] = useState(true)
+
+  const [
+    showBlueTrails,
+    setShowBlueTrails,
+  ] = useState(true)
+
+  const [
+    showRedTrails,
+    setShowRedTrails,
+  ] = useState(true)
+
+  const [
+    showBlackTrails,
+    setShowBlackTrails,
+  ] = useState(true)
+
+  const [
+    mapZoom,
+    setMapZoom,
+  ] = useState(5.5)
+
+  const [
+    isMapExpanded,
+    setIsMapExpanded,
+  ] = useState(false)
+
+  const [
+    isRecording,
+    setIsRecording,
+  ] = useState(false)
+
+  const [
+    tourDistance,
+    setTourDistance,
+  ] = useState(0)
+
+  const [
+    tourElevation,
+    setTourElevation,
+  ] = useState(0)
+
+  const trackRef =
+    useRef([])
+
+
+  /* ===================================================
+     KARTE ERSTELLEN
+  =================================================== */
 
   useEffect(() => {
-    const map = mapRef.current
+    if (!mapContainer.current) {
+      return
+    }
+
+    const map =
+      new Map({
+        container:
+          mapContainer.current,
+
+        style: {
+          version: 8,
+
+          sources: {
+            thunderforest: {
+              type: 'raster',
+
+              tiles: [
+                `https://api.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${import.meta.env.VITE_THUNDERFOREST_API_KEY}`,
+              ],
+
+              tileSize: 256,
+
+              attribution:
+                '© Thunderforest | © OpenStreetMap contributors',
+            },
+          },
+
+          layers: [
+            {
+              id:
+                'thunderforest-outdoors',
+
+              type: 'raster',
+
+              source:
+                'thunderforest',
+            },
+          ],
+        },
+
+        center: [
+          11.5,
+          47.0,
+        ],
+
+        zoom: 5.5,
+
+        attributionControl:
+          true,
+
+        cooperativeGestures:
+          false,
+
+        dragRotate:
+          false,
+
+        touchZoomRotate:
+          true,
+      })
+
+    map.addControl(
+      new NavigationControl({
+        showCompass: false,
+      }),
+      'top-right'
+    )
+
+    mapRef.current =
+      map
+
+    const updateZoomDisplay =
+      () => {
+        setMapZoom(
+          map.getZoom()
+        )
+      }
+
+    map.on(
+  'zoom',
+  updateZoomDisplay
+)
+
+map.on(
+  'moveend',
+  updateZoomDisplay
+)
+
+    setMapZoom(
+      map.getZoom()
+    )
+
+    const cleanupMtbTrailLoading =
+      setupMtbTrailLoading(
+        map
+      )
+
+    /*
+      MapLibre nach Größenänderungen
+      neu berechnen.
+    */
+    const resizeMap =
+      () => {
+        if (
+          mapRef.current
+        ) {
+          mapRef.current.resize()
+        }
+      }
+
+    map.on(
+      'load',
+      resizeMap
+    )
+
+    const resizeTimer1 =
+      window.setTimeout(
+        resizeMap,
+        100
+      )
+
+    const resizeTimer2 =
+      window.setTimeout(
+        resizeMap,
+        500
+      )
+
+    const resizeTimer3 =
+      window.setTimeout(
+        resizeMap,
+        1000
+      )
+
+    window.addEventListener(
+      'resize',
+      resizeMap
+    )
+
+    window.addEventListener(
+      'orientationchange',
+      resizeMap
+    )
+
+    return () => {
+      window.clearTimeout(
+        resizeTimer1
+      )
+
+      window.clearTimeout(
+        resizeTimer2
+      )
+
+      window.clearTimeout(
+        resizeTimer3
+      )
+
+      window.removeEventListener(
+        'resize',
+        resizeMap
+      )
+
+      window.removeEventListener(
+        'orientationchange',
+        resizeMap
+      )
+
+      cleanupMtbTrailLoading()
+
+      map.off(
+        'zoom',
+        updateZoomDisplay
+      )
+
+      map.off(
+        'move',
+        updateZoomDisplay
+      )
+
+      if (
+        map.__mtbTrailNameMarkers
+      ) {
+        map.__mtbTrailNameMarkers.forEach(
+          (marker) => {
+            try {
+              marker.remove()
+            } catch (_) {}
+          }
+        )
+
+        map.__mtbTrailNameMarkers =
+          []
+      }
+
+      map.remove()
+
+      mapRef.current =
+        null
+    }
+  }, [])
+
+
+  /* ===================================================
+     FULLSCREEN / NORMAL RESIZE
+  =================================================== */
+
+  useEffect(() => {
+    const map =
+      mapRef.current
 
     if (!map) return
 
-    const applyVisibility = () => {
-      updateMtbTrailVisibility(map, {
-        green: showGreenTrails,
-        blue: showBlueTrails,
-        red: showRedTrails,
-        black: showBlackTrails,
-      })
-    }
+    /*
+      Erst warten, bis das fixed Element
+      seine neue Größe wirklich hat.
+    */
+    const timer =
+      window.setTimeout(
+        () => {
+          map.resize()
+        },
+        100
+      )
+
+    return () =>
+      window.clearTimeout(
+        timer
+      )
+  }, [isMapExpanded])
+
+
+  /* ===================================================
+     TRAIL-FARBEN EIN/AUS
+  =================================================== */
+
+  useEffect(() => {
+    const map =
+      mapRef.current
+
+    if (!map) return
+
+    const applyVisibility =
+      () => {
+        updateMtbTrailVisibility(
+          map,
+          {
+            green:
+              showGreenTrails,
+
+            blue:
+              showBlueTrails,
+
+            red:
+              showRedTrails,
+
+            black:
+              showBlackTrails,
+          }
+        )
+      }
 
     if (map.loaded()) {
       applyVisibility()
     } else {
-      map.once('load', applyVisibility)
+      map.once(
+        'load',
+        applyVisibility
+      )
     }
 
     return () => {
-      map.off('load', applyVisibility)
-    }
-  }, [showGreenTrails, showBlueTrails, showRedTrails, showBlackTrails])
-
- /* ---------------------------------------------
-   GPS TRACKING
---------------------------------------------- */
-
-useEffect(() => {
-  if (!navigator.geolocation) {
-    setLocationError(true)
-    return
-  }
-
-  const watchId = navigator.geolocation.watchPosition(
-    (location) => {
-      const coords = [
-        location.coords.longitude,
-        location.coords.latitude,
-      ]
-
-      setPosition(coords)
-
-     // Nur während einer aktiven Tour aufzeichnen
-if (isRecording) {
-  const previousPoint =
-    trackRef.current[trackRef.current.length - 1]
-
-  const currentPoint = {
-    coords,
-    altitude: location.coords.altitude,
-    accuracy: location.coords.accuracy,
-    timestamp: location.timestamp,
-  }
-
-  trackRef.current.push(currentPoint)
-
-  // Höhenmeter berechnen
-  if (
-    previousPoint &&
-    previousPoint.altitude !== null &&
-    currentPoint.altitude !== null
-  ) {
-    const elevationDifference =
-      currentPoint.altitude -
-      previousPoint.altitude
-
-    if (elevationDifference > 0) {
-      setTourElevation((value) =>
-        value + elevationDifference
+      map.off(
+        'load',
+        applyVisibility
       )
     }
-  }
-}
-    },
-    () => {
-      setLocationError(true)
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 5000,
-    }
-  )
+  }, [
+    showGreenTrails,
+    showBlueTrails,
+    showRedTrails,
+    showBlackTrails,
+  ])
 
-  return () => {
-    navigator.geolocation.clearWatch(watchId)
-  }
-}, [])
 
-  /* ---------------------------------------------
-     PARK-MARKER
-  --------------------------------------------- */
+  /* ===================================================
+     GPS TRACKING
+  =================================================== */
 
   useEffect(() => {
-    const map = mapRef.current
+    if (!navigator.geolocation) {
+      setLocationError(true)
+      return
+    }
+
+    const watchId =
+      navigator.geolocation.watchPosition(
+        (location) => {
+          const coords = [
+            location.coords.longitude,
+            location.coords.latitude,
+          ]
+
+          setPosition(
+            coords
+          )
+
+          if (isRecording) {
+            const previousPoint =
+              trackRef.current[
+                trackRef.current.length -
+                  1
+              ]
+
+            const currentPoint = {
+              coords,
+
+              altitude:
+                location.coords
+                  .altitude,
+
+              accuracy:
+                location.coords
+                  .accuracy,
+
+              timestamp:
+                location.timestamp,
+            }
+
+            trackRef.current.push(
+              currentPoint
+            )
+
+            if (
+              previousPoint &&
+              previousPoint.altitude !==
+                null &&
+              currentPoint.altitude !==
+                null
+            ) {
+              const elevationDifference =
+                currentPoint.altitude -
+                previousPoint.altitude
+
+              if (
+                elevationDifference >
+                0
+              ) {
+                setTourElevation(
+                  (value) =>
+                    value +
+                    elevationDifference
+                )
+              }
+            }
+          }
+        },
+
+        () => {
+          setLocationError(
+            true
+          )
+        },
+
+        {
+          enableHighAccuracy:
+            true,
+
+          timeout:
+            10000,
+
+          maximumAge:
+            5000,
+        }
+      )
+
+    return () => {
+      navigator.geolocation.clearWatch(
+        watchId
+      )
+    }
+  }, [])
+
+
+  /* ===================================================
+     BIKEPARK MARKER
+  =================================================== */
+
+  useEffect(() => {
+    const map =
+      mapRef.current
 
     if (!map) return
 
-    const updateMarkers = () => {
-      parkMarkersRef.current.forEach(
-        (marker) => marker.remove()
-      )
-
-      parkMarkersRef.current = []
-
-      if (!showBikeparks) return
-
-      const filteredParks =
-        GRAVITY_CARD_PARKS.filter(
-          (park) =>
-            park.name
-              .toLowerCase()
-              .includes(
-                search.toLowerCase()
-              ) ||
-            park.country
-              .toLowerCase()
-              .includes(
-                search.toLowerCase()
-              )
+    const updateMarkers =
+      () => {
+        parkMarkersRef.current.forEach(
+          (marker) =>
+            marker.remove()
         )
 
-      filteredParks.forEach((park) => {
-        const element =
-          document.createElement('button')
+        parkMarkersRef.current =
+          []
 
-        element.className =
-          'bikepark-marker'
+        if (!showBikeparks) {
+          return
+        }
 
-        element.innerHTML = '🚵'
+        const filteredParks =
+          GRAVITY_CARD_PARKS.filter(
+            (park) =>
+              park.name
+                .toLowerCase()
+                .includes(
+                  search.toLowerCase()
+                ) ||
+              park.country
+                .toLowerCase()
+                .includes(
+                  search.toLowerCase()
+                )
+          )
 
-        element.title = park.name
+        filteredParks.forEach(
+          (park) => {
+            const element =
+              document.createElement(
+                'button'
+              )
 
-        element.addEventListener(
-          'click',
-          () => {
-            openPark(park)
+            element.className =
+              'bikepark-marker'
+
+            element.innerHTML =
+              '🚵'
+
+            element.title =
+              park.name
+
+            element.addEventListener(
+              'click',
+              () => {
+                openPark(park)
+              }
+            )
+
+            const marker =
+              new Marker({
+                element,
+                anchor:
+                  'center',
+              })
+                .setLngLat([
+                  park.lon,
+                  park.lat,
+                ])
+                .addTo(map)
+
+            parkMarkersRef.current.push(
+              marker
+            )
           }
         )
-
-        const marker =
-          new Marker({
-            element,
-            anchor: 'center',
-          })
-            .setLngLat([
-              park.lon,
-              park.lat,
-            ])
-            .addTo(map)
-
-        parkMarkersRef.current.push(
-          marker
-        )
-      })
-    }
+      }
 
     if (map.loaded()) {
       updateMarkers()
     } else {
-      map.once('load', updateMarkers)
+      map.once(
+        'load',
+        updateMarkers
+      )
     }
 
     return () => {
       parkMarkersRef.current.forEach(
-        (marker) => marker.remove()
+        (marker) =>
+          marker.remove()
       )
 
-      parkMarkersRef.current = []
+      parkMarkersRef.current =
+        []
     }
-  }, [search, showBikeparks])
+  }, [
+    search,
+    showBikeparks,
+  ])
 
-  /* ---------------------------------------------
+
+  /* ===================================================
      USER MARKER
-  --------------------------------------------- */
+  =================================================== */
 
   useEffect(() => {
-    const map = mapRef.current
+    const map =
+      mapRef.current
 
-    if (!map || !position) return
+    if (
+      !map ||
+      !position
+    ) {
+      return
+    }
 
-    if (userMarkerRef.current) {
+    if (
+      userMarkerRef.current
+    ) {
       userMarkerRef.current.remove()
     }
 
     const element =
-      document.createElement('div')
+      document.createElement(
+        'div'
+      )
 
     element.className =
       'user-location-marker'
 
-    element.innerHTML = '📍'
+    element.innerHTML =
+      '📍'
 
     userMarkerRef.current =
       new Marker({
         element,
-        anchor: 'bottom',
+        anchor:
+          'bottom',
       })
-        .setLngLat(position)
+        .setLngLat(
+          position
+        )
         .addTo(map)
   }, [position])
 
-  /* ---------------------------------------------
+
+  /* ===================================================
      PARK ÖFFNEN
-  --------------------------------------------- */
+  =================================================== */
 
-  const openPark = (park) => {
-    setSelectedPark(park)
+  const openPark =
+    (park) => {
+      setSelectedPark(
+        park
+      )
 
-    if (!mapRef.current) return
+      if (!mapRef.current) {
+        return
+      }
 
-    mapRef.current.flyTo({
-      center: [
-        park.lon,
-        park.lat,
-      ],
-      zoom: 12,
-      duration: 1000,
-    })
-  }
+      mapRef.current.flyTo({
+        center: [
+          park.lon,
+          park.lat,
+        ],
 
-  /* ---------------------------------------------
+        /*
+          Direkt auf 12 zoomen,
+          damit die MTB-Trails erscheinen.
+        */
+        zoom: 12,
+
+        duration:
+          1000,
+      })
+    }
+
+
+  /* ===================================================
      MEIN STANDORT
-  --------------------------------------------- */
+  =================================================== */
 
-  const goToLocation = () => {
-    if (!position || !mapRef.current) return
+  const goToLocation =
+    () => {
+      if (
+        !position ||
+        !mapRef.current
+      ) {
+        return
+      }
 
-    mapRef.current.flyTo({
-      center: position,
-      zoom: 13,
-      duration: 1200,
-    })
-  }
+      mapRef.current.flyTo({
+        center:
+          position,
 
-  /* ---------------------------------------------
+        zoom:
+          13,
+
+        duration:
+          1200,
+      })
+    }
+
+
+  /* ===================================================
      SUCHE
-  --------------------------------------------- */
+  =================================================== */
 
   const filteredParks =
     GRAVITY_CARD_PARKS.filter(
@@ -6136,31 +7109,48 @@ if (isRecording) {
           )
     )
 
+
   return (
-    <section className="page map-page">
+    <section
+      className="page map-page"
+    >
+
       <TrailFinder />
+
       <div className="map-header">
+
         <div>
           <p className="eyebrow">
             GRAVITY CARD 2026
           </p>
 
-          <h1>MTB Karte</h1>
+          <h1>
+            MTB Karte
+          </h1>
         </div>
 
         <button
           className="location-button"
-          onClick={goToLocation}
+          onClick={
+            goToLocation
+          }
           disabled={!position}
         >
           📍 Mein Standort
         </button>
+
       </div>
 
-      {/* SUCHE */}
+
+      {/* =================================================
+         SUCHE
+      ================================================= */}
 
       <div className="map-search">
-        <span>🔎</span>
+
+        <span>
+          🔎
+        </span>
 
         <input
           type="text"
@@ -6176,22 +7166,44 @@ if (isRecording) {
         {search && (
           <button
             className="clear-search"
-            onClick={() => setSearch('')}
+            onClick={() =>
+              setSearch('')
+            }
           >
             ×
           </button>
         )}
+
       </div>
 
+
+      {/* =================================================
+         BIKEPARK FILTER
+      ================================================= */}
+
       <div className="map-filter-row">
+
         <button
-          className={`bikepark-toggle ${showBikeparks ? 'active' : ''}`}
-          onClick={() => setShowBikeparks((value) => !value)}
-          aria-pressed={showBikeparks}
+          className={`bikepark-toggle ${
+            showBikeparks
+              ? 'active'
+              : ''
+          }`}
+          onClick={() =>
+            setShowBikeparks(
+              (value) =>
+                !value
+            )
+          }
+          aria-pressed={
+            showBikeparks
+          }
           type="button"
         >
           <span className="toggle-eye">
-            {showBikeparks ? '👁️' : '🙈'}
+            {showBikeparks
+              ? '👁️'
+              : '🙈'}
           </span>
 
           🚵 Gravity Card Parks
@@ -6200,174 +7212,540 @@ if (isRecording) {
         <span className="bikepark-count">
           {filteredParks.length} / 32 Parks
         </span>
+
       </div>
+
+
+      {/* =================================================
+         TRAIL FILTER
+      ================================================= */}
 
       <div
         className="trail-filter-row"
         style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '8px',
-          marginBottom: '12px',
+          display:
+            'flex',
+
+          flexWrap:
+            'wrap',
+
+          gap:
+            '8px',
+
+          marginBottom:
+            '12px',
         }}
       >
-        <button
-          type="button"
-          onClick={() => setShowGreenTrails((value) => !value)}
-          aria-pressed={showGreenTrails}
-          style={{
-            border: `1px solid ${showGreenTrails ? 'rgba(57, 211, 83, 0.65)' : 'rgba(255,255,255,0.12)'}`,
-            background: showGreenTrails ? 'rgba(57, 211, 83, 0.14)' : 'rgba(255,255,255,0.04)',
-            color: showGreenTrails ? '#39D353' : 'rgba(255,255,255,0.45)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontWeight: 800,
-            cursor: 'pointer',
-          }}
-        >
-          🟢 {showGreenTrails ? 'S0 an' : 'S0 aus'}
-        </button>
 
         <button
           type="button"
-          onClick={() => setShowBlueTrails((value) => !value)}
-          aria-pressed={showBlueTrails}
+          onClick={() =>
+            setShowGreenTrails(
+              (value) =>
+                !value
+            )
+          }
+          aria-pressed={
+            showGreenTrails
+          }
           style={{
-            border: `1px solid ${showBlueTrails ? 'rgba(22, 140, 255, 0.65)' : 'rgba(255,255,255,0.12)'}`,
-            background: showBlueTrails ? 'rgba(22, 140, 255, 0.14)' : 'rgba(255,255,255,0.04)',
-            color: showBlueTrails ? '#168CFF' : 'rgba(255,255,255,0.45)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontWeight: 800,
-            cursor: 'pointer',
+            border:
+              `1px solid ${
+                showGreenTrails
+                  ? 'rgba(57, 211, 83, 0.65)'
+                  : 'rgba(255,255,255,0.12)'
+              }`,
+
+            background:
+              showGreenTrails
+                ? 'rgba(57, 211, 83, 0.14)'
+                : 'rgba(255,255,255,0.04)',
+
+            color:
+              showGreenTrails
+                ? '#39D353'
+                : 'rgba(255,255,255,0.45)',
+
+            borderRadius:
+              '10px',
+
+            padding:
+              '8px 12px',
+
+            fontWeight:
+              800,
+
+            cursor:
+              'pointer',
           }}
         >
-          🔵 {showBlueTrails ? 'S1 an' : 'S1 aus'}
+          🟢{' '}
+          {showGreenTrails
+            ? 'S0 an'
+            : 'S0 aus'}
         </button>
+
 
         <button
           type="button"
-          onClick={() => setShowRedTrails((value) => !value)}
-          aria-pressed={showRedTrails}
+          onClick={() =>
+            setShowBlueTrails(
+              (value) =>
+                !value
+            )
+          }
+          aria-pressed={
+            showBlueTrails
+          }
           style={{
-            border: `1px solid ${showRedTrails ? 'rgba(255, 48, 48, 0.65)' : 'rgba(255,255,255,0.12)'}`,
-            background: showRedTrails ? 'rgba(255, 48, 48, 0.14)' : 'rgba(255,255,255,0.04)',
-            color: showRedTrails ? '#FF3030' : 'rgba(255,255,255,0.45)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontWeight: 800,
-            cursor: 'pointer',
+            border:
+              `1px solid ${
+                showBlueTrails
+                  ? 'rgba(22, 140, 255, 0.65)'
+                  : 'rgba(255,255,255,0.12)'
+              }`,
+
+            background:
+              showBlueTrails
+                ? 'rgba(22, 140, 255, 0.14)'
+                : 'rgba(255,255,255,0.04)',
+
+            color:
+              showBlueTrails
+                ? '#168CFF'
+                : 'rgba(255,255,255,0.45)',
+
+            borderRadius:
+              '10px',
+
+            padding:
+              '8px 12px',
+
+            fontWeight:
+              800,
+
+            cursor:
+              'pointer',
           }}
         >
-          🔴 {showRedTrails ? 'S2 an' : 'S2 aus'}
+          🔵{' '}
+          {showBlueTrails
+            ? 'S1 an'
+            : 'S1 aus'}
         </button>
+
 
         <button
           type="button"
-          onClick={() => setShowBlackTrails((value) => !value)}
-          aria-pressed={showBlackTrails}
+          onClick={() =>
+            setShowRedTrails(
+              (value) =>
+                !value
+            )
+          }
+          aria-pressed={
+            showRedTrails
+          }
           style={{
-            border: `1px solid ${showBlackTrails ? 'rgba(17, 17, 17, 0.9)' : 'rgba(255,255,255,0.12)'}`,
-            background: showBlackTrails ? 'rgba(17, 17, 17, 0.55)' : 'rgba(255,255,255,0.04)',
-            color: showBlackTrails ? '#ffffff' : 'rgba(255,255,255,0.45)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontWeight: 800,
-            cursor: 'pointer',
+            border:
+              `1px solid ${
+                showRedTrails
+                  ? 'rgba(255, 48, 48, 0.65)'
+                  : 'rgba(255,255,255,0.12)'
+              }`,
+
+            background:
+              showRedTrails
+                ? 'rgba(255, 48, 48, 0.14)'
+                : 'rgba(255,255,255,0.04)',
+
+            color:
+              showRedTrails
+                ? '#FF3030'
+                : 'rgba(255,255,255,0.45)',
+
+            borderRadius:
+              '10px',
+
+            padding:
+              '8px 12px',
+
+            fontWeight:
+              800,
+
+            cursor:
+              'pointer',
           }}
         >
-          ⚫ {showBlackTrails ? 'S3–S6 an' : 'S3–S6 aus'}
+          🔴{' '}
+          {showRedTrails
+            ? 'S2 an'
+            : 'S2 aus'}
         </button>
+
+
+        <button
+          type="button"
+          onClick={() =>
+            setShowBlackTrails(
+              (value) =>
+                !value
+            )
+          }
+          aria-pressed={
+            showBlackTrails
+          }
+          style={{
+            border:
+              `1px solid ${
+                showBlackTrails
+                  ? 'rgba(17, 17, 17, 0.9)'
+                  : 'rgba(255,255,255,0.12)'
+              }`,
+
+            background:
+              showBlackTrails
+                ? 'rgba(17, 17, 17, 0.55)'
+                : 'rgba(255,255,255,0.04)',
+
+            color:
+              showBlackTrails
+                ? '#ffffff'
+                : 'rgba(255,255,255,0.45)',
+
+            borderRadius:
+              '10px',
+
+            padding:
+              '8px 12px',
+
+            fontWeight:
+              800,
+
+            cursor:
+              'pointer',
+          }}
+        >
+          ⚫{' '}
+          {showBlackTrails
+            ? 'S3–S6 an'
+            : 'S3–S6 aus'}
+        </button>
+
       </div>
 
-{/* =====================================================
-   KARTE
-===================================================== */}
 
-<div className="real-map">
+      {/* =================================================
+         KARTE
+      ================================================= */}
 
-  <div
-    ref={mapContainer}
-    className="maplibre-container"
-  />
+      <div
+        className="real-map"
+        style={
+          isMapExpanded
+            ? {
+                position:
+                  'fixed',
 
-  {locationError && (
-    <div className="map-location-info">
-      📍 Standort konnte nicht
-      ermittelt werden.
-    </div>
-  )}
+                inset:
+                  0,
 
-</div>
+                zIndex:
+                  9999,
 
-{/* AUSGEWÄHLTER PARK */}
+                width:
+                  '100vw',
 
-{selectedPark && (
-  <div className="bikepark-card">
+                height:
+                  '100vh',
 
-    <button
-      className="bikepark-close"
-      onClick={() => setSelectedPark(null)}
-    >
-      ×
-    </button>
+                margin:
+                  0,
 
-    <div className="bikepark-card-icon">
-      🚵
-    </div>
+                borderRadius:
+                  0,
 
-    <div className="bikepark-card-content">
+                background:
+                  '#07100a',
+              }
 
-      <span className="bikepark-label">
-        GRAVITY CARD
-      </span>
+            : {
+                position:
+                  'relative',
 
-      <h3>
-        {selectedPark.name}
-      </h3>
+                width:
+                  '100%',
 
-      <p>
-        📍 {selectedPark.country}
-      </p>
-
-      <div className="selected-trails">
-        <strong>
-          Trails
-        </strong>
-
-        <div>
-          {selectedPark.trails
-            .slice(0, 5)
-            .map((trail) => (
-              <span key={trail}>
-                {trail}
-              </span>
-            ))}
-        </div>
-      </div>
-
-      <button
-        className="park-website-button"
-        onClick={() =>
-          window.open(
-            selectedPark.website,
-            '_blank',
-            'noopener,noreferrer'
-          )
+                minHeight:
+                  '500px',
+              }
         }
       >
-        🌐 Offizielle Webseite
-      </button>
 
-    </div>
+        <div
+          ref={
+            mapContainer
+          }
+          className="maplibre-container"
+          style={{
+            width:
+              '100%',
 
-  </div>
-)}
-{/* PARKLISTE */}
+            height:
+              '100%',
+          }}
+        />
+
+
+        {/* =============================================
+           ZOOM ANZEIGE
+        ============================================= */}
+
+        <div
+          style={{
+            position:
+              'absolute',
+
+            left:
+              '12px',
+
+            bottom:
+              '12px',
+
+            zIndex:
+              20,
+
+            padding:
+              '7px 10px',
+
+            borderRadius:
+              '9px',
+
+            background:
+              'rgba(0, 0, 0, 0.82)',
+
+            border:
+              '1px solid rgba(57, 211, 83, 0.55)',
+
+            color:
+              '#ffffff',
+
+            fontSize:
+              '12px',
+
+            fontWeight:
+              800,
+
+            fontFamily:
+              'Arial, sans-serif',
+
+            backdropFilter:
+              'blur(6px)',
+
+            pointerEvents:
+              'none',
+
+            boxShadow:
+              '0 4px 15px rgba(0,0,0,0.35)',
+          }}
+        >
+          Zoom{' '}
+          {mapZoom.toFixed(1)}
+        </div>
+
+
+        {/* =============================================
+           GROSS / KLEIN
+        ============================================= */}
+
+        <button
+          type="button"
+
+          onClick={() =>
+            setIsMapExpanded(
+              (value) =>
+                !value
+            )
+          }
+
+          aria-label={
+            isMapExpanded
+              ? 'Karte verkleinern'
+              : 'Karte vergrößern'
+          }
+
+          title={
+            isMapExpanded
+              ? 'Karte verkleinern'
+              : 'Karte vergrößern'
+          }
+
+          style={{
+            position:
+              'absolute',
+
+            right:
+              '12px',
+
+            top:
+              '12px',
+
+            zIndex:
+              30,
+
+            width:
+              '44px',
+
+            height:
+              '44px',
+
+            border:
+              '1px solid rgba(57, 211, 83, 0.65)',
+
+            borderRadius:
+              '10px',
+
+            background:
+              'rgba(0, 0, 0, 0.82)',
+
+            color:
+              '#ffffff',
+
+            fontSize:
+              '20px',
+
+            fontWeight:
+              900,
+
+            cursor:
+              'pointer',
+
+            backdropFilter:
+              'blur(8px)',
+
+            display:
+              'flex',
+
+            alignItems:
+              'center',
+
+            justifyContent:
+              'center',
+
+            boxShadow:
+              '0 4px 15px rgba(0,0,0,0.35)',
+          }}
+        >
+          {isMapExpanded
+            ? '↙'
+            : '↗'}
+        </button>
+
+
+        {/* =============================================
+           GPS FEHLER
+        ============================================= */}
+
+        {locationError && (
+          <div
+            className="map-location-info"
+          >
+            📍 Standort konnte nicht
+            ermittelt werden.
+          </div>
+        )}
+
+      </div>
+
+
+      {/* =================================================
+         AUSGEWÄHLTER PARK
+      ================================================= */}
+
+      {selectedPark && (
+        <div className="bikepark-card">
+
+          <button
+            className="bikepark-close"
+            onClick={() =>
+              setSelectedPark(
+                null
+              )
+            }
+          >
+            ×
+          </button>
+
+          <div className="bikepark-card-icon">
+            🚵
+          </div>
+
+          <div className="bikepark-card-content">
+
+            <span className="bikepark-label">
+              GRAVITY CARD
+            </span>
+
+            <h3>
+              {selectedPark.name}
+            </h3>
+
+            <p>
+              📍{' '}
+              {selectedPark.country}
+            </p>
+
+            <div className="selected-trails">
+
+              <strong>
+                Trails
+              </strong>
+
+              <div>
+                {selectedPark.trails
+                  .slice(0, 5)
+                  .map(
+                    (trail) => (
+                      <span
+                        key={trail}
+                      >
+                        {trail}
+                      </span>
+                    )
+                  )}
+              </div>
+
+            </div>
+
+            <button
+              className="park-website-button"
+              onClick={() =>
+                window.open(
+                  selectedPark.website,
+                  '_blank',
+                  'noopener,noreferrer'
+                )
+              }
+            >
+              🌐 Offizielle Webseite
+            </button>
+
+          </div>
+
+        </div>
+      )}
+
+
+      {/* =================================================
+         PARKLISTE
+      ================================================= */}
 
       <div className="bikepark-panel">
+
         <div className="bikepark-panel-header">
+
           <div>
+
             <p className="eyebrow">
               GRAVITY CARD
             </p>
@@ -6375,12 +7753,19 @@ if (isRecording) {
             <h2>
               32 Bike-Destinationen
             </h2>
+
           </div>
+
         </div>
 
+
         {filteredParks.length === 0 ? (
+
           <div className="bikepark-empty">
-            <span>🔎</span>
+
+            <span>
+              🔎
+            </span>
 
             <strong>
               Kein Bikepark gefunden
@@ -6389,23 +7774,32 @@ if (isRecording) {
             <small>
               Versuch einen anderen Namen.
             </small>
+
           </div>
+
         ) : (
+
           <div className="bikepark-list">
+
             {filteredParks.map(
               (park) => (
+
                 <button
                   className="bikepark-list-item"
                   key={park.id}
                   onClick={() =>
-                    openPark(park)
+                    openPark(
+                      park
+                    )
                   }
                 >
+
                   <div className="bikepark-list-icon">
                     📍
                   </div>
 
                   <div className="bikepark-list-info">
+
                     <strong>
                       {park.name}
                     </strong>
@@ -6418,23 +7812,31 @@ if (isRecording) {
                       {park.trails.length}{' '}
                       eingetragene Trails
                     </small>
+
                   </div>
 
                   <span className="bikepark-arrow">
                     →
                   </span>
+
                 </button>
+
               )
             )}
+
           </div>
+
         )}
+
       </div>
+
 
       <p className="map-attribution-note">
         Die Gravity Card umfasst 2026 insgesamt
         32 Bike-Destinationen in 7 Ländern.
-        Kartenmaterial: © OpenStreetMap.
+        Kartenmaterial: © Thunderforest | © OpenStreetMap.
       </p>
+
     </section>
   )
 }
