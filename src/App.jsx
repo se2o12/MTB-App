@@ -6497,208 +6497,265 @@ function MapPage() {
 
 
   /* ===================================================
-     KARTE ERSTELLEN
-  =================================================== */
+   KARTE ERSTELLEN
+=================================================== */
 
-  useEffect(() => {
-    if (!mapContainer.current) {
-      return
-    }
+useEffect(() => {
+  if (!mapContainer.current) {
+    return
+  }
 
-    const map =
-      new Map({
-        container:
-          mapContainer.current,
+  const thunderforestApiKey =
+    import.meta.env.VITE_THUNDERFOREST_API_KEY
 
-        style: {
-          version: 8,
+  if (!thunderforestApiKey) {
+    console.error(
+      'VITE_THUNDERFOREST_API_KEY fehlt.'
+    )
+    return
+  }
 
-          sources: {
-            thunderforest: {
-              type: 'raster',
+  const map =
+    new Map({
+      container:
+        mapContainer.current,
 
-              tiles: [
-                `https://api.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${import.meta.env.VITE_THUNDERFOREST_API_KEY}`,
-              ],
+      style: {
+        version: 8,
 
-              tileSize: 256,
+        sources: {
+          thunderforest: {
+            type: 'raster',
 
-              attribution:
-                '© Thunderforest | © OpenStreetMap contributors',
-            },
+            tiles: [
+              `https://api.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${thunderforestApiKey}`,
+            ],
+
+            tileSize: 256,
+
+            attribution:
+              '© Thunderforest | © OpenStreetMap contributors',
           },
-
-          layers: [
-            {
-              id:
-                'thunderforest-outdoors',
-
-              type: 'raster',
-
-              source:
-                'thunderforest',
-            },
-          ],
         },
 
-        center: [
-          11.5,
-          47.0,
+        layers: [
+          {
+            id:
+              'thunderforest-outdoors',
+
+            type:
+              'raster',
+
+            source:
+              'thunderforest',
+
+            minzoom:
+              0,
+
+            maxzoom:
+              22,
+
+            paint: {
+              'raster-opacity':
+                1,
+
+              'raster-fade-duration':
+                0,
+            },
+          },
         ],
+      },
 
-        zoom: 5.5,
+      center: [
+        11.5,
+        47.0,
+      ],
 
-        attributionControl:
-          true,
+      zoom:
+        5.5,
 
-        cooperativeGestures:
-          false,
+      attributionControl:
+        true,
 
-        dragRotate:
-          false,
+      cooperativeGestures:
+        false,
 
-        touchZoomRotate:
-          true,
-      })
+      dragRotate:
+        false,
 
-    map.addControl(
-      new NavigationControl({
-        showCompass: false,
-      }),
-      'top-right'
-    )
+      touchZoomRotate:
+        true,
 
-    mapRef.current =
-      map
+      preserveDrawingBuffer:
+        false,
+    })
 
-    const updateZoomDisplay =
-      () => {
-        setMapZoom(
-          map.getZoom()
-        )
-      }
+  mapRef.current =
+    map
 
-    map.on(
-  'zoom',
-  updateZoomDisplay
-)
+  const updateZoomDisplay =
+    () => {
+      if (!map) return
 
-map.on(
-  'moveend',
-  updateZoomDisplay
-)
-
-    setMapZoom(
-      map.getZoom()
-    )
-
-    const cleanupMtbTrailLoading =
-      setupMtbTrailLoading(
-        map
+      setMapZoom(
+        map.getZoom()
       )
+    }
 
-    /*
-      MapLibre nach Größenänderungen
-      neu berechnen.
-    */
-    const resizeMap =
-      () => {
-        if (
-          mapRef.current
-        ) {
-          mapRef.current.resize()
-        }
+  map.on(
+    'zoom',
+    updateZoomDisplay
+  )
+
+  map.on(
+    'moveend',
+    updateZoomDisplay
+  )
+
+  setMapZoom(
+    map.getZoom()
+  )
+
+  /*
+    ---------------------------------------------------
+    MAP RESIZE
+    ---------------------------------------------------
+
+    Besonders wichtig auf Handy:
+    MapLibre kann beim ersten Rendern
+    eine falsche Containergröße erkennen.
+
+    Deshalb resize:
+    - beim Laden
+    - kurz danach
+    - bei Fensteränderung
+    - bei Orientierung
+  */
+
+  const resizeMap =
+    () => {
+      if (
+        mapRef.current &&
+        map.loaded()
+      ) {
+        mapRef.current.resize()
       }
+    }
 
-    map.on(
-      'load',
-      resizeMap
-    )
+  map.on(
+    'load',
+    () => {
+      resizeMap()
 
-    const resizeTimer1 =
       window.setTimeout(
         resizeMap,
         100
       )
 
-    const resizeTimer2 =
       window.setTimeout(
         resizeMap,
-        500
+        300
       )
 
-    const resizeTimer3 =
       window.setTimeout(
         resizeMap,
-        1000
+        700
       )
+    }
+  )
 
-    window.addEventListener(
+  const resizeTimer1 =
+    window.setTimeout(
+      resizeMap,
+      100
+    )
+
+  const resizeTimer2 =
+    window.setTimeout(
+      resizeMap,
+      500
+    )
+
+  const resizeTimer3 =
+    window.setTimeout(
+      resizeMap,
+      1000
+    )
+
+  window.addEventListener(
+    'resize',
+    resizeMap
+  )
+
+  window.addEventListener(
+    'orientationchange',
+    resizeMap
+  )
+
+  /*
+    MTB-Trails erst danach initialisieren.
+  */
+  const cleanupMtbTrailLoading =
+    setupMtbTrailLoading(
+      map
+    )
+
+  return () => {
+    window.clearTimeout(
+      resizeTimer1
+    )
+
+    window.clearTimeout(
+      resizeTimer2
+    )
+
+    window.clearTimeout(
+      resizeTimer3
+    )
+
+    window.removeEventListener(
       'resize',
       resizeMap
     )
 
-    window.addEventListener(
+    window.removeEventListener(
       'orientationchange',
       resizeMap
     )
 
-    return () => {
-      window.clearTimeout(
-        resizeTimer1
+    cleanupMtbTrailLoading()
+
+    map.off(
+      'zoom',
+      updateZoomDisplay
+    )
+
+    map.off(
+      'moveend',
+      updateZoomDisplay
+    )
+
+    if (
+      map.__mtbTrailNameMarkers
+    ) {
+      map.__mtbTrailNameMarkers.forEach(
+        (marker) => {
+          try {
+            marker.remove()
+          } catch (_) {}
+        }
       )
 
-      window.clearTimeout(
-        resizeTimer2
-      )
-
-      window.clearTimeout(
-        resizeTimer3
-      )
-
-      window.removeEventListener(
-        'resize',
-        resizeMap
-      )
-
-      window.removeEventListener(
-        'orientationchange',
-        resizeMap
-      )
-
-      cleanupMtbTrailLoading()
-
-      map.off(
-        'zoom',
-        updateZoomDisplay
-      )
-
-      map.off(
-        'move',
-        updateZoomDisplay
-      )
-
-      if (
-        map.__mtbTrailNameMarkers
-      ) {
-        map.__mtbTrailNameMarkers.forEach(
-          (marker) => {
-            try {
-              marker.remove()
-            } catch (_) {}
-          }
-        )
-
-        map.__mtbTrailNameMarkers =
-          []
-      }
-
-      map.remove()
-
-      mapRef.current =
-        null
+      map.__mtbTrailNameMarkers =
+        []
     }
-  }, [])
+
+    map.remove()
+
+    mapRef.current =
+      null
+  }
+}, [])
 
 
   /* ===================================================
